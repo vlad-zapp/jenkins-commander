@@ -1,0 +1,34 @@
+.jenkins-nav-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.jenkins-nav-container {
+    position: absolute;
+    width: 60%;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, 0%);
+}
+
+.jenkins-nav-prompt-input {
+    position: relative;
+    font-size: 1.6rem;
+    width: 100%;
+}
+
+.jenkins-nav-search-result {
+    position: relative;
+    font-size: 1.6rem;
+    background-color: rgba(255,255,255,1);
+    cursor: pointer;
+}
+
+.jenkins-nav-search-result-selected {
+    background-color: rgb(146, 178, 255);
+}

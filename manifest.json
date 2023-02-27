@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Jenkins Commander",
+  "description": "Toolset for jenkins to make your life easier",
+  "version": "0.1",
+  "permissions": [
+    "storage"
+  ],
+  "background": {
+    //"service_worker": "src/bg.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1:8080/*"
+      ],
+      "js": [
+        "lib/jquery-3.6.3.min.js",
+        "lib/fuzzysort.min.js",
+        "src/utils.js",
+        "src/storage.js",
+        "src/navigator.js",
+        "src/pages.js",
+        "src/commander.js"
+      ],
+      "css": ["styles.css"]
+    }
+  ]
+}
