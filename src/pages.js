@@ -1,20 +1,18 @@
-class AbstractPage {
-    getLastBuild(jobUrl) {
-        let request = requestJenkins(appendUrl(jobUrl, '/api/json'));
+function getLastBuild(jobUrl) {
+    let request = requestJenkins(appendUrl(jobUrl, '/api/json'));
 
-        if (request.status === 200) {
-            return JSON.parse(request.responseText).lastBuild.url
-        }
+    if (request.status === 200) {
+        return JSON.parse(request.responseText).lastBuild.url
     }
 }
 
-class JobOverviewPage extends AbstractPage {
+class JobOverviewPage {
     static Identify() {
         return (location.pathname.match('/job/[^/]+/$'))
     }
 
     static GetLastBuild() {
-        super.getLastBuild(location.href)
+        return getLastBuild(location.href)
     }
 
     static GetCurrentBuild() {
@@ -24,12 +22,12 @@ class JobOverviewPage extends AbstractPage {
 
 class JobRunPage {
     static Identify() {
-        return (location.pathname.match('/job/[^/]+/[0-9]+/$'))
+        return (location.pathname.match('/job/[^/]+/[0-9]+/'))
     }
 
     static GetLastBuild() {
         const url = appendUrl(location.href.match('^.*/job/[^/]+')[0], '/api/json')
-        super.getLastBuild(url)
+        return getLastBuild(url)
     }
 
     static GetCurrentBuild() {
@@ -48,6 +46,6 @@ class JobConfigurationPage {
 
     static GetLastBuild() {
         const url = appendUrl(location.href.match('^.*/job/[^/]+')[0], '/api/json')
-        super.getLastBuild(url)
+        return getLastBuild(url)
     }
 }

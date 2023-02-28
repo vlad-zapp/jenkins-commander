@@ -64,7 +64,6 @@ function doc_keyDown(e)
 function cacheJobs() {
     const start = Date.now();
     const request = requestJenkins(appendUrl(location.origin, '/api/json?tree='+"jobs[fullName,".repeat(5)+'jobs'+"]".repeat(5)))
-    console.log(`Loaded jobs in ${Date.now()-start} ms`)
     if (request.status === 200) {
         let jobs = []
         let folders = [JSON.parse(request.responseText)]
