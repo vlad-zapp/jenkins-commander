@@ -9,10 +9,27 @@ const elementCode = `\
 
 
 class Navigator {
-    #jobNames
+    #jobs = []
+    #commands = [
+        {
+            name: "/script-approvals",
+            cmd: () => { location.pathname = '/scriptApproval/' }
+        },
+        {
+            name: "/script",
+            cmd: () => { location.pathname = '/script' }
+        },
+        {
+            name: "/all-builds-history",
+            cmd: () => { location.pathname = '/view/all/builds' }
+        },
+    ]
 
     constructor(hostname) {
-        this.#jobNames = DbStorage.get(hostname)
+        this.#jobs = DbStorage.get(hostname).map(it => ({
+            name: it,
+            cmd: () => { location.pathname = `/job/${it.split('/').join('/job/')}` }
+        }))
     }
 
     toggle() {
@@ -22,7 +39,7 @@ class Navigator {
             $('input#jenkins-navigator-prompt')
                 .on('input', e => this.#onSearch(this, e))
                 .on('click', x => false)
-                .on('keydown', e=> this.#onSelectResult(this, e))
+                .on('keydown', e => this.#onSelectResult(this, e))
             $('div#jenkins-navigator-overlay').on('click', this.#hide)
         } else {
             if ($(element).is(":visible")) {
@@ -31,6 +48,8 @@ class Navigator {
                 this.#show()
             }
         }
+        $('div#jenkins-navigator-overlay').css('left', window.scrollX)
+        $('div#jenkins-navigator-overlay').css('top', window.scrollY)
         $('input#jenkins-navigator-prompt').focus()
     }
 
@@ -49,12 +68,12 @@ class Navigator {
     }
 
     #onSelectResult(self, e) {
-        if(e.originalEvent.code == "ArrowDown" || e.originalEvent.code == "ArrowUp") {
+        if (e.originalEvent.code == "ArrowDown" || e.originalEvent.code == "ArrowUp") {
             let elem = $('div.jenkins-nav-search-result-selected')
             elem.removeClass('jenkins-nav-search-result-selected')
             elem = elem[e.originalEvent.code == "ArrowDown" ? 'next' : 'prev']('div.jenkins-nav-search-result')
-                
-            if(elem.length){
+
+            if (elem.length) {
                 elem.addClass('jenkins-nav-search-result-selected')
             } else {
                 elem = $('div.jenkins-nav-search-result')
@@ -65,23 +84,28 @@ class Navigator {
             return false
         }
 
-        if(e.originalEvent.code == "Enter") {
+        if (e.originalEvent.code == "Enter") {
             let elem = $('div.jenkins-nav-search-result-selected')
-            if(elem.length == 0) {
+            if (elem.length == 0) {
                 elem = $('div.jenkins-nav-search-result').first()
             }
             elem.click()
         }
 
-        if(e.originalEvent.code == "Escape") {
+        if (e.originalEvent.code == "Escape") {
             this.#hide()
         }
     }
 
     #onSearch(sender, e) {
         const text = sender.#getText().toLowerCase()
+        
         if (text != '') {
-            const matches = fuzzysort.go(text, sender.#jobNames)
+            const matches = fuzzysort.go(
+                text,
+                (text.startsWith('/') ? sender.#commands : sender.#jobs),
+                { key: 'name' }
+            )
             sender.#showResults(matches, 10)
         } else {
             sender.#showResults([], 0)
@@ -96,16 +120,16 @@ class Navigator {
             $('div#jenkins-navigator-container').append(`<div id='jenkins-navigator-result-${num}' class='jenkins-nav-search-result'>\
                 ${fuzzysort.highlight(res, "<span style='color:red'>", "</span>")}</div>`)
             $(`div#jenkins-navigator-result-${num}`)
-                .on('click', () => { location.href = appendUrl(location.origin, `/job/${res.target.split('/').join('/job/')}`) })
-                // This is firing if mouse is over element during it's appeasrance. Need to fix.
-                // .hover(
-                //     function() {
-                //         $('jenkins-nav-search-result').removeClass('jenkins-nav-search-result-selected');
-                //         $(this).addClass('jenkins-nav-search-result-selected');
-                //       }, function() {
-                //         $(this).removeClass('jenkins-nav-search-result-selected');
-                //       }
-                // )
+                .on('click', res.obj.cmd)
+            // This is firing if mouse is over element during it's appeasrance. Need to fix.
+            // .hover(
+            //     function() {
+            //         $('jenkins-nav-search-result').removeClass('jenkins-nav-search-result-selected');
+            //         $(this).addClass('jenkins-nav-search-result-selected');
+            //       }, function() {
+            //         $(this).removeClass('jenkins-nav-search-result-selected');
+            //       }
+            // )
         });
     }
 }

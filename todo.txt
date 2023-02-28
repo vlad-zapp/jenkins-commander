@@ -2,9 +2,9 @@
 [x] Fix search results layout
 [ ] Silent reload - revisit
 [x] Normal font size
-[ ] Add commands
+[x] Add commands
 [ ] Add shortcut to editor + editor shortcuts (apply, etc)
 [ ] History of navigation
 [ ] Toggling on/off on any site, save state to cloud
 [x] when search results appear - they should not be selected by the mouse that dont move.
-[ ] Dim correctly on screens with long pages
+[x] Dim correctly on screens with long pages
