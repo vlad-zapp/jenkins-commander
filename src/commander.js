@@ -1,6 +1,8 @@
 this.$ = this.jQuery = jQuery.noConflict(true);
 var nav
 
+chrome.runtime.sendMessage("turn_on_icon")
+
 function requestJenkins(url, method='GET', data=null) {
     const request = new XMLHttpRequest();
     request.open(method, url, false); // `false` makes the request synchronous

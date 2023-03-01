@@ -14,5 +14,8 @@
   },
   "action": {
     "default_title": "Jenkins Commander"
+  },
+  "icons": {
+    "48": "media/icon-on-32.png"
   }
 }

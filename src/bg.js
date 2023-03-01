@@ -25,14 +25,27 @@ function getScript(host) {
     }]
 }
 
+function getHost(url) {
+    const match = url.match('(http(?:s)?://[^/]+)(?:/)?')
+    if (match) {
+        return match[1]
+    } else {
+        return null
+    }
+}
+
 chrome.action.onClicked.addListener(async function (tab) {
     await getCurrentTab().then(async t => {
-        const host = t.url.match('(http(?:s)?://[^/]+)(?:/)?')[1]
+        const host = getHost(t.url)
+        if (host == null) {
+            return
+        }
 
         await chrome.scripting.getRegisteredContentScripts()
             .then(async s => {
                 if (s.find(x => x.id == host)) {
                     await chrome.scripting.unregisterContentScripts({ ids: [host] })
+                    chrome.action.setIcon({ path: "/media/icon-off-32.png" })
                 } else {
                     await chrome.scripting.registerContentScripts(getScript(host))
                 }
@@ -48,5 +61,24 @@ chrome.runtime.onMessage.addListener(
                 .then(s => sendResponse(s.map(x => x.id)))
             return true
         }
+        if (request === "turn_on_icon") {
+            chrome.action.setIcon({ path: "/media/icon-on-32.png" })
+        }
     }
 );
+
+chrome.tabs.onActivated.addListener(function (activeInfo) {
+    getCurrentTab().then(t => {
+        const host = getHost(t.url)
+        chrome.scripting.getRegisteredContentScripts()
+            .then(async s => {
+                if (s.find(x => x.id == host)) {
+                    // on
+                    chrome.action.setIcon({ path: "/media/icon-on-32.png" })
+                } else {
+                    //off
+                    chrome.action.setIcon({ path: "/media/icon-off-32.png" })
+                }
+            })
+    })
+})
