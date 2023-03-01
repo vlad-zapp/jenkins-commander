@@ -3,12 +3,15 @@ const inputCode = "<input class='jenkins-nav-prompt-input' id='jenkins-navigator
 const elementCode = `\
     <div id='jenkins-navigator-overlay' class='jenkins-nav-overlay'>\
         <div id='jenkins-navigator-container' class='jenkins-nav-container'>\
+            <br/><div class='jenkins-nav-header'></div>\
             ${inputCode}\
         </div>\
     </div>`
 
 
 class Navigator {
+    #handler = this.#onSearch
+    #servers = []
     #jobs = []
     #commands = [
         {
@@ -23,6 +26,16 @@ class Navigator {
             name: "/all-builds-history",
             cmd: () => { location.pathname = '/view/all/builds' }
         },
+        {
+            name: "/switch-server",
+            cmd: () => {
+                chrome.runtime.sendMessage("get_servers")
+                    .then(r => {
+                        this.#servers = r.map(x => ({ name: x, cmd: () => location.href = appendUrl(x, location.pathname) }))
+                        this.switchMode('Select server:', this.#onServerSelect)
+                    })
+            }
+        }
     ]
 
     constructor(hostname) {
@@ -37,10 +50,10 @@ class Navigator {
         if (!element.length) {
             $('body').append(elementCode)
             $('input#jenkins-navigator-prompt')
-                .on('input', e => this.#onSearch(this, e))
+                .on('input', e => this.#handler(this, e))
                 .on('click', x => false)
                 .on('keydown', e => this.#onSelectResult(this, e))
-            $('div#jenkins-navigator-overlay').on('click', this.#hide)
+            $('div#jenkins-navigator-overlay').on('click', () => this.#hide(this))
         } else {
             if ($(element).is(":visible")) {
                 this.#hide()
@@ -53,14 +66,26 @@ class Navigator {
         $('input#jenkins-navigator-prompt').focus()
     }
 
+    switchMode(name, handler) {
+        $('div[id^=jenkins-navigator-result-]').remove()
+        $('input#jenkins-navigator-prompt').val('')
+        $('div.jenkins-nav-header').text(name)
+        $('div.jenkins-nav-header').css('visibility', 'visible')
+        this.#handler = handler
+        handler(this, null)
+    }
+
     #show() {
         $('div#jenkins-navigator-overlay').show()
     }
 
-    #hide() {
+    #hide(sender = this) {
+        $('div.jenkins-nav-header').text('')
+        $('div.jenkins-nav-header').css('visibility', 'hidden')
         $('div#jenkins-navigator-overlay').hide()
         $('input#jenkins-navigator-prompt').val('')
         $('div[id^=jenkins-navigator-result-]').remove()
+        sender.#handler = sender.#onSearch
     }
 
     #getText() {
@@ -98,29 +123,30 @@ class Navigator {
     }
 
     #onSearch(sender, e) {
-        const text = sender.#getText().toLowerCase()
-        
-        if (text != '') {
-            const matches = fuzzysort.go(
-                text,
-                (text.startsWith('/') ? sender.#commands : sender.#jobs),
-                { key: 'name' }
-            )
-            sender.#showResults(matches, 10)
-        } else {
-            sender.#showResults([], 0)
-        }
+        const text = sender.#getText()
+        const matches = fuzzysort.go(
+            text,
+            (text.startsWith('/') ? sender.#commands : sender.#jobs),
+            { key: 'name', all: false }
+        )
+        sender.#showResults(matches, 10)
+    }
 
+    async #onServerSelect(sender, e) {
+        const text = sender.#getText()
+        const results = fuzzysort.go(text, sender.#servers, { key: 'name', all: true })
+        sender.#showResults(results, 10)
     }
 
     #showResults(results, number) {
         results = results.slice(0, number)
         $('div[id^=jenkins-navigator-result-]').remove()
         results.forEach((res, num) => {
+            console.log(res)
             $('div#jenkins-navigator-container').append(`<div id='jenkins-navigator-result-${num}' class='jenkins-nav-search-result'>\
-                ${fuzzysort.highlight(res, "<span style='color:red'>", "</span>")}</div>`)
+                ${res.score == -Infinity ? res.target : fuzzysort.highlight(res, "<span style='color:red'>", "</span>")}</div>`)
             $(`div#jenkins-navigator-result-${num}`)
-                .on('click', res.obj.cmd)
+                .on('click', () => { res.obj.cmd(); return false; })
             // This is firing if mouse is over element during it's appeasrance. Need to fix.
             // .hover(
             //     function() {

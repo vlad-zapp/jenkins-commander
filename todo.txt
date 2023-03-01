@@ -8,3 +8,4 @@
 [ ] Toggling on/off on any site, save state to cloud
 [x] when search results appear - they should not be selected by the mouse that dont move.
 [x] Dim correctly on screens with long pages
+[ ] Colorful icon for enabled state

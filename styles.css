@@ -9,7 +9,7 @@
 .jenkins-nav-container {
     position: absolute;
     width: 60%;
-    top: 30%;
+    top: 25%;
     left: 50%;
     transform: translate(-50%, 0%);
 }
@@ -25,6 +25,13 @@
     font-size: 1.6rem;
     background-color: rgba(255,255,255,1);
     cursor: pointer;
+}
+
+.jenkins-nav-header {
+    position: relative;
+    font-size: 1.6rem;
+    background-color: rgba(255,255,255,1);
+    visibility: hidden;
 }
 
 .jenkins-nav-search-result-selected {

@@ -28,10 +28,10 @@ function getScript(host) {
 chrome.action.onClicked.addListener(async function (tab) {
     await getCurrentTab().then(async t => {
         const host = t.url.match('(http(?:s)?://[^/]+)(?:/)?')[1]
-        
+
         await chrome.scripting.getRegisteredContentScripts()
             .then(async s => {
-                if(s.find(x=>x.id==host)) {
+                if (s.find(x => x.id == host)) {
                     await chrome.scripting.unregisterContentScripts({ ids: [host] })
                 } else {
                     await chrome.scripting.registerContentScripts(getScript(host))
@@ -40,3 +40,13 @@ chrome.action.onClicked.addListener(async function (tab) {
             })
     })
 });
+
+chrome.runtime.onMessage.addListener(
+    function (request, sender, sendResponse) {
+        if (request === "get_servers") {
+            chrome.scripting.getRegisteredContentScripts()
+                .then(s => sendResponse(s.map(x => x.id)))
+            return true
+        }
+    }
+);
