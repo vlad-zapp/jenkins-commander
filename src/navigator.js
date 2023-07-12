@@ -4,159 +4,168 @@ const elementCode = `\
     <div id='jenkins-navigator-overlay' class='jenkins-nav-overlay'>\
         <div id='jenkins-navigator-container' class='jenkins-nav-container'>\
             <br/><div class='jenkins-nav-header'></div>\
-            ${inputCode}\
+            <div class='jenkins-nav-prompt-div'>\
+                <!--div class='jenkins-nav-update-div'>\
+                    <img src='${chrome.runtime.getURL('media/icon-update.png')}' class='jenkins-nav-update-img' /></div-->\
+                <div class='jenkins-nav-prompt-input-div'>${inputCode}</div>\
+            </div>\
         </div>\
     </div>`
 
-
 class Navigator {
-    #handler = this.#onSearch
-    #servers = []
-    #jobs = []
-    #commands = [
-        {
-            name: "/script-approvals",
-            cmd: () => { location.pathname = '/scriptApproval/' }
-        },
-        {
-            name: "/script",
-            cmd: () => { location.pathname = '/script' }
-        },
-        {
-            name: "/all-builds-history",
-            cmd: () => { location.pathname = '/view/all/builds' }
-        },
-        {
-            name: "/switch-server",
-            cmd: () => {
-                chrome.runtime.sendMessage("get_servers")
-                    .then(r => {
-                        this.#servers = r.map(x => ({ name: x, cmd: () => location.href = appendUrl(x, location.pathname) }))
-                        this.switchMode('Select server:', this.#onServerSelect)
-                    })
-            }
-        }
-    ]
+    #defaultMenu
+    #currentMenu
 
     constructor(hostname) {
-        this.#jobs = DbStorage.get(hostname).map(it => ({
-            name: it,
-            cmd: () => { location.pathname = `/job/${it.split('/').join('/job/')}` }
-        }))
+        (async () => this.#defaultMenu = await new JobSearchMenu({ hostname: hostname }))()
+    }
+
+    isVisible() {
+        let element = $('div#jenkins-navigator-overlay')
+        return element.length && $(element).is(":visible")
     }
 
     toggle() {
-        let element = $('div#jenkins-navigator-overlay')
-        if (!element.length) {
-            $('body').append(elementCode)
-            $('input#jenkins-navigator-prompt')
-                .on('input', e => this.#handler(this, e))
-                .on('click', x => false)
-                .on('keydown', e => this.#onSelectResult(this, e))
-            $('div#jenkins-navigator-overlay').on('click', () => this.#hide(this))
+        if (this.isVisible()) {
+            this.#hide()
         } else {
-            if ($(element).is(":visible")) {
-                this.#hide()
-            } else {
-                this.#show()
-            }
+            this.#show()
         }
-        $('div#jenkins-navigator-overlay').css('left', window.scrollX)
-        $('div#jenkins-navigator-overlay').css('top', window.scrollY)
+    }
+
+    openMenu(newMenu) {
+        if (newMenu.header) {
+            $('div.jenkins-nav-header').text(newMenu.header)
+            $('div.jenkins-nav-header').css('visibility', 'visible')
+        }
+
+        $('input#jenkins-navigator-prompt').val('')
+        $('div[id^=jenkins-navigator-result-]').remove()
+
+        this.#currentMenu = newMenu
+
+        if (this.#currentMenu.searchForEmpty) {
+            $('input#jenkins-navigator-prompt').trigger('input')
+        }
+
         $('input#jenkins-navigator-prompt').focus()
     }
 
-    switchMode(name, handler) {
-        $('div[id^=jenkins-navigator-result-]').remove()
-        $('input#jenkins-navigator-prompt').val('')
-        $('div.jenkins-nav-header').text(name)
-        $('div.jenkins-nav-header').css('visibility', 'visible')
-        this.#handler = handler
-        handler(this, null)
+    navigate(url, newWindow = false) {
+        var gotoUrl = url;
+        if (!url.match('://')) {
+            gotoUrl = appendUrl(location.origin, url)
+        }
+        if (newWindow === true) {
+            window.open(gotoUrl)
+        } else {
+            location.href = gotoUrl
+        }
+    }
+
+    cacheJobs() {
+        console.log('caching jobs')
+        cacheJobs()
     }
 
     #show() {
+        if ($('div#jenkins-navigator-overlay').length == 0) {
+            $('body').append(elementCode)
+            $('input#jenkins-navigator-prompt')
+                .on('click', () => false)
+                .on('input', e => {
+                    const specialPrefix = e.target.value.match(/^[^\w^\d]/)
+                    let searchItems = this.#currentMenu.items
+                    if (specialPrefix) {
+                        searchItems = searchItems.filter(i => i.name.startsWith(specialPrefix[0]))
+                    } else {
+                        searchItems = searchItems.filter(i => i.name.match(/^[\w\d]/))
+                    }
+                    const matches = fuzzysort.go(e.target.value, searchItems, { key: 'name', all: this.#currentMenu.searchForEmpty })
+                    this.#showResults(matches, this.#currentMenu.maxResults)
+                })
+
+            $('div#jenkins-navigator-overlay').on('click', this.#hide)
+            $('img.jenkins-nav-update-img').height($('input#jenkins-navigator-prompt').height())
+        }
+
+        $('body').on('keydown.navigator', e => this.#onInput(e, this))
+        this.#currentMenu = this.#defaultMenu
+        $('div#jenkins-navigator-overlay').css('left', window.scrollX)
+        $('div#jenkins-navigator-overlay').css('top', window.scrollY)
         $('div#jenkins-navigator-overlay').show()
+        $('input#jenkins-navigator-prompt').focus()
     }
 
-    #hide(sender = this) {
+    #hide() {
+        $('body').off('.navigator')
         $('div.jenkins-nav-header').text('')
-        $('div.jenkins-nav-header').css('visibility', 'hidden')
+        $('div.jenkins-nav-header').hide()
         $('div#jenkins-navigator-overlay').hide()
         $('input#jenkins-navigator-prompt').val('')
         $('div[id^=jenkins-navigator-result-]').remove()
-        sender.#handler = sender.#onSearch
     }
 
-    #getText() {
-        return $('input#jenkins-navigator-prompt').val()
-    }
-
-    #onSelectResult(self, e) {
-        if (e.originalEvent.code == "ArrowDown" || e.originalEvent.code == "ArrowUp") {
-            let elem = $('div.jenkins-nav-search-result-selected')
-            elem.removeClass('jenkins-nav-search-result-selected')
-            elem = elem[e.originalEvent.code == "ArrowDown" ? 'next' : 'prev']('div.jenkins-nav-search-result')
-
-            if (elem.length) {
-                elem.addClass('jenkins-nav-search-result-selected')
-            } else {
-                elem = $('div.jenkins-nav-search-result')
-                elem = elem[e.originalEvent.code == "ArrowDown" ? 'first' : 'last']()
-                elem?.addClass('jenkins-nav-search-result-selected')
-            }
-
-            return false
+    #onInput(e, sender) {
+        switch (e.originalEvent.code) {
+            case "ArrowLeft":
+                if ($('input#jenkins-navigator-prompt').val().length == 0) {
+                    sender.cacheJobs()
+                }
+                break
+            case "ArrowDown":
+            case "ArrowUp":
+                var elem = $('div.jenkins-nav-search-result-selected')
+                if (elem.length) {
+                    elem.removeClass('jenkins-nav-search-result-selected')
+                    elem = elem[e.originalEvent.code == "ArrowDown" ? 'next' : 'prev']('div.jenkins-nav-search-result')
+                }
+                if (elem.length) {
+                    elem.addClass('jenkins-nav-search-result-selected')
+                } else {
+                    elem = $('div.jenkins-nav-search-result')
+                    if ($('input#jenkins-navigator-prompt').is(':focus') && elem.length) {
+                        $('input#jenkins-navigator-prompt').blur()
+                        elem = elem[e.originalEvent.code == "ArrowDown" ? 'first' : 'last']()
+                        elem?.addClass('jenkins-nav-search-result-selected')
+                    } else {
+                        $('input#jenkins-navigator-prompt').focus()
+                    }
+                }
+                return false
+            case "Escape":
+                this.#hide()
+                break
+            default:
+                var elem = $('div.jenkins-nav-search-result-selected')
+                if (elem.length == 0) {
+                    elem = $('div.jenkins-nav-search-result').first()
+                }
+                if (elem.length == 0 && e.originalEvent.code != "Enter") {
+                    return;
+                }
+                const event = jQuery.Event('interact');
+                event.shiftKey = e.originalEvent.shiftKey
+                event.ctrlKey = e.originalEvent.ctrlKey
+                event.altKey = e.originalEvent.altKey
+                event.code = e.originalEvent.code
+                elem.trigger(event)
         }
-
-        if (e.originalEvent.code == "Enter") {
-            let elem = $('div.jenkins-nav-search-result-selected')
-            if (elem.length == 0) {
-                elem = $('div.jenkins-nav-search-result').first()
-            }
-            elem.click()
-        }
-
-        if (e.originalEvent.code == "Escape") {
-            this.#hide()
-        }
-    }
-
-    #onSearch(sender, e) {
-        const text = sender.#getText()
-        const matches = fuzzysort.go(
-            text,
-            (text.startsWith('/') ? sender.#commands : sender.#jobs),
-            { key: 'name', all: false }
-        )
-        sender.#showResults(matches, 10)
-    }
-
-    async #onServerSelect(sender, e) {
-        const text = sender.#getText()
-        const results = fuzzysort.go(text, sender.#servers, { key: 'name', all: true })
-        sender.#showResults(results, 10)
     }
 
     #showResults(results, number) {
-        results = results.slice(0, number)
         $('div[id^=jenkins-navigator-result-]').remove()
+        results = results.slice(0, number)
         results.forEach((res, num) => {
-            console.log(res)
             $('div#jenkins-navigator-container').append(`<div id='jenkins-navigator-result-${num}' class='jenkins-nav-search-result'>\
                 ${res.score == -Infinity ? res.target : fuzzysort.highlight(res, "<span style='color:red'>", "</span>")}</div>`)
+            if (res.obj.opensMenu) {
+                $(`#jenkins-navigator-result-${num}`).append(`<img src='${chrome.runtime.getURL('media/icon-menu.svg')}' class='jenkins-nav-menu-img' id=jenkins-navigator-result-menu-${num}/>`)
+            }
+
             $(`div#jenkins-navigator-result-${num}`)
-                .on('click', () => { res.obj.cmd(); return false; })
-            // This is firing if mouse is over element during it's appeasrance. Need to fix.
-            // .hover(
-            //     function() {
-            //         $('jenkins-nav-search-result').removeClass('jenkins-nav-search-result-selected');
-            //         $(this).addClass('jenkins-nav-search-result-selected');
-            //       }, function() {
-            //         $(this).removeClass('jenkins-nav-search-result-selected');
-            //       }
-            // )
+                .on('interact', e => res.obj.act(e, this))
+                .on('click', e => res.obj.act(e, this))
         });
     }
 }
-

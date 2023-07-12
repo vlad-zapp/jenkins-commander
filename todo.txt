@@ -1,3 +1,4 @@
+[x] Rebuild parametrized jobs!
 [ ] Store jobs in db, update async
 [x] Fix search results layout
 [ ] Silent reload - revisit
@@ -5,8 +6,15 @@
 [x] Add commands
 [ ] Add shortcut to editor + editor shortcuts (apply, etc)
 [ ] History of navigation
-[ ] Toggling on/off on any site, save state to cloud
+[x] Toggling on/off on any site, save state to cloud
 [x] when search results appear - they should not be selected by the mouse that dont move.
 [x] Dim correctly on screens with long pages
-[ ] Colorful icon for enabled state
-[ ] Enable it only on tabs with jenkins?
+[x] Colorful icon for enabled state
+[ ] When navigating away from tab with jenkins icon stays 'on'
+[x] Select first search result as default to avoid confusion
+[ ] Different configs with locators etc for different versions of jenkins
+[ ] If rebuild failed - don't jump to console. Make sure console is new.
+[x] Unify url check for url menu item
+[ ] Restart parametrized jobs - propper wait
+[x] Add icons for menus
+[ ] Loading screen

@@ -14,10 +14,38 @@
     transform: translate(-50%, 0%);
 }
 
+.jenkins-nav-prompt-div {
+    position: relative;
+    white-space: nowrap;
+    width: 100%;
+    background-color: white;
+}
+
+.jenkins-nav-update-img {
+    border: 0.1rem solid black;
+    border-right: 0;
+    padding: 0.1rem;
+}
+
 .jenkins-nav-prompt-input {
     position: relative;
     font-size: 1.6rem;
     width: 100%;
+    border: 0.1rem solid black;
+    border-radius: 0 !important;
+    padding: 0.1rem;
+    padding-left: 0.3rem;
+}
+
+.jenkins-nav-prompt-input-div {
+    position: relative;
+    width: auto;
+    float: none;
+    overflow: hidden;
+}
+
+.jenkins-nav-update-div {
+    float: left;
 }
 
 .jenkins-nav-search-result {
@@ -25,15 +53,31 @@
     font-size: 1.6rem;
     background-color: rgba(255,255,255,1);
     cursor: pointer;
+    padding: 0.1rem;
+    padding-left: 0.3rem;
+
+    display: flex;
+    align-items: center;
 }
 
 .jenkins-nav-header {
     position: relative;
     font-size: 1.6rem;
-    background-color: rgba(255,255,255,1);
+    color: rgba(200,200,200);
+    border: 0.1rem solid black;
+    border-bottom: 0px;
+    background-color: black;
     visibility: hidden;
+    padding: 0.1rem;
+    padding-left: 0.3rem;
 }
 
 .jenkins-nav-search-result-selected {
     background-color: rgb(146, 178, 255);
+}
+
+.jenkins-nav-menu-img {
+    margin-left: auto;
+    height: 1em;
+    padding: 0.1rem;
 }

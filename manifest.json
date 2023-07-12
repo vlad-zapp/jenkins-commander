@@ -17,5 +17,9 @@
   },
   "icons": {
     "48": "media/icon-on-32.png"
-  }
+  },
+  "web_accessible_resources": [{
+    "matches": ["<all_urls>"],
+    "resources": ["media/icon-menu.svg"]
+  }]
 }

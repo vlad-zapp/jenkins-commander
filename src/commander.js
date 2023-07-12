@@ -3,89 +3,80 @@ var nav
 
 chrome.runtime.sendMessage("turn_on_icon")
 
-function requestJenkins(url, method='GET', data=null) {
+function requestJenkins(url, method = 'GET', data = null) {
     const request = new XMLHttpRequest();
     request.open(method, url, false); // `false` makes the request synchronous
     request.setRequestHeader($('head').attr('data-crumb-header'), $('head').attr('data-crumb-value'))
-    if(data && method=='POST') {
+    if (data && method == 'POST') {
         request.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     }
     request.send(data);
     return request
 }
 
-function restart(jobUrl) {
-    let request = requestJenkins(appendUrl(jobUrl, '/rebuild'))
-    if (request.status != 200) {
-        requestJenkins(appendUrl(jobUrl, '/gerrit-trigger-retrigger-this/index'), 'POST')
+function requestJenkinsJson(url, method = 'GET', data = null) {
+    const req = requestJenkins(url, method, data)
+    if (req.status == 200) {
+        return JSON.parse(req.responseText)
     }
+}
+
+function restart(jobUrl) {
+    request = requestJenkins(appendUrl(jobUrl, '/rebuild'))
+    if (request.responseURL.match(/rebuild\/parameterized(?:\/)?$/i)) {
+        $('#restartFrame').remove()
+        $(`<iframe src="${request.responseURL}" id="restartFrame" style="visibility:hidden; height:1px" />`).appendTo('body')
+        $('#restartFrame').on('load', ()=>$('#restartFrame').contents().find("form[name=config] button:submit").click())
+        return true
+    }
+
+    if (request.status != 200) {
+        request = requestJenkins(appendUrl(jobUrl, '/gerrit-trigger-retrigger-this/index'), 'POST')
+        return request.status == 200
+    }
+
+    return true
 }
 
 function jumpToConsole(jobBuildUrl, newTab = false) {
-    if(newTab) {
-        window.open(appendUrl(jobBuildUrl,'/console'), '_blank').focus();
+    if (newTab) {
+        window.open(appendUrl(jobBuildUrl, '/console'), '_blank').focus();
     } else {
-        window.location = appendUrl(jobBuildUrl,'/console')
+        window.location = appendUrl(jobBuildUrl, '/console')
     }
 }
 
-function doc_keyDown(e)
-{
+function doc_keyDown(e) {
     // alt-r: restart job and go to console
-    if(e.code=='KeyR' && e.altKey) {
-        if(JobOverviewPage.Identify()) {
-            restart(JobOverviewPage.GetCurrentBuild())
-            jumpToConsole(JobOverviewPage.GetLastBuild())
+    if (e.code == 'KeyR' && e.altKey) {
+        if (JobOverviewPage.Identify()) {
+            if (restart(JobOverviewPage.GetCurrentBuild())) {
+                jumpToConsole(JobOverviewPage.GetLastBuild())
+            }
+        } else if (JobRerunPage.Identify()) {
+            JobRerunPage.Rebuild()
         } else if (JobRunPage.Identify()) {
-            restart(JobRunPage.GetCurrentBuild())
-            jumpToConsole(JobRunPage.GetLastBuild())
-        } else if (JobConfigurationPage.Identify()) {
-            JobConfigurationPage.Apply()
-            jumpToConsole(JobConfigurationPage.GetLastBuild())
+            if (restart(JobRunPage.GetCurrentBuild())) {
+                jumpToConsole(JobRunPage.GetLastBuild())
+            }
         }
     }
 
     //alt-c: configure job
-    if(e.code=='KeyC' && e.altKey) {
-        if(JobConfigurationPage.Identify()) {
-            console.log($('button[type=submit]').length)
+    if (e.code == 'KeyC' && e.altKey) {
+        if (JobConfigurationPage.Identify()) {
             $('button[type=submit]').click()
         }
-        else if(location.pathname.match('/job/[^/]+')) {
+        else if (location.pathname.match('/job/[^/]+')) {
             location.href = appendUrl(location.href.match('(^.*/job/[^/]+)(/.*)')[1], '/configure')
         }
         return false;
     }
 
     //alt-/: open navigation prompt
-    if(e.code=='Slash' && e.altKey) {
+    if (e.code == 'Slash' && e.altKey) {
         nav.toggle()
     }
-}
-
-function cacheJobs() {
-    const start = Date.now();
-    const request = requestJenkins(appendUrl(location.origin, '/api/json?tree='+"jobs[fullName,".repeat(5)+'jobs'+"]".repeat(5)))
-    if (request.status === 200) {
-        let jobs = []
-        let folders = [JSON.parse(request.responseText)]
-        let folder
-
-        while(folder = folders.pop()) {
-            if(folder.jobs) {
-                folder.jobs.forEach(it => {
-                    if(it.jobs) {
-                        folders.push(it)
-                    } else if(it.fullName) {
-                        jobs.push(it.fullName)
-                    }
-                });
-            }
-        }
-
-        DbStorage.set(location.host, jobs)
-    }
-    console.log(`Cached jobs in ${Date.now()-start} ms`)
 }
 
 function silentReload() {
@@ -97,14 +88,11 @@ function silentReload() {
 
 document.addEventListener('keydown', doc_keyDown, false);
 $('form[role=search]').remove()
-cacheJobs()
 nav = new Navigator(location.host)
 
-new Promise(() => {
-    setTimeout(()=> {
-        // todo: revisit
-        if(window.document.location.href.match('/job/[^/]+/[0-9]+/console(?:Full)?') && sleep(2000) && !($('pre.console-output')?.text())) {
-            silentReload()
-        }
-    }, 2000)
-})
+//cacheJobs()
+// new Promise(() => {
+//     if (window.document.location.href.match('/job/[^/]+/[0-9]+/console(?:Full)?') && sleep(2000) && !($('pre.console-output')?.text())) {
+//         silentReload()
+//     }
+// })

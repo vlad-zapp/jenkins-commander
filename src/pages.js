@@ -1,11 +1,3 @@
-function getLastBuild(jobUrl) {
-    let request = requestJenkins(appendUrl(jobUrl, '/api/json'));
-
-    if (request.status === 200) {
-        return JSON.parse(request.responseText).lastBuild.url
-    }
-}
-
 class JobOverviewPage {
     static Identify() {
         return (location.pathname.match('/job/[^/]+/$'))
@@ -32,6 +24,17 @@ class JobRunPage {
 
     static GetCurrentBuild() {
         return location.href.match('^.*/job/[^/]+/[0-9]+')[0]
+    }
+}
+
+class JobRerunPage {
+    static Identify() {
+        return (location.pathname.match('/job/[^/]+/[0-9]+/rebuild/parameterized(?:/)?'))
+    }
+
+    static Rebuild() {
+        console.log($('form[name="config"] button:submit'))
+        $('form[name="config"] button:submit').click()
     }
 }
 
