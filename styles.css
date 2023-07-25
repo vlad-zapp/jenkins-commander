@@ -7,11 +7,18 @@
 }
 
 .jenkins-nav-container {
-    position: absolute;
+    position: relative;
     width: 60%;
+    height:60%;
     top: 25%;
     left: 50%;
     transform: translate(-50%, 0%);
+    display:flex;
+    flex-direction: column;
+}
+
+.jenkins-navigator-results {
+    overflow: auto;
 }
 
 .jenkins-nav-prompt-div {

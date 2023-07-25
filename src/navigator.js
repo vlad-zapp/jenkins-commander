@@ -6,9 +6,11 @@ const elementCode = `\
             <br/><div class='jenkins-nav-header'></div>\
             <div class='jenkins-nav-prompt-div'>\
                 <!--div class='jenkins-nav-update-div'>\
-                    <img src='${chrome.runtime.getURL('media/icon-update.png')}' class='jenkins-nav-update-img' /></div-->\
+                    <img src='${chrome.runtime.getURL('media/icon-update.png')}' class='jenkins-nav-update-img' />
+                </div-->\
                 <div class='jenkins-nav-prompt-input-div'>${inputCode}</div>\
             </div>\
+            <div id="jenkins-navigator-results" class="jenkins-navigator-results"></div>
         </div>\
     </div>`
 
@@ -78,7 +80,7 @@ class Navigator {
                         searchItems = searchItems.filter(i => i.name.match(/^[\w\d]/))
                     }
                     const matches = fuzzysort.go(e.target.value, searchItems, { key: 'name', all: this.#currentMenu.searchForEmpty })
-                    this.#showResults(matches, this.#currentMenu.maxResults)
+                    this.#showResults(matches)
                 })
 
             $('div#jenkins-navigator-overlay').on('click', this.#hide)
@@ -118,14 +120,19 @@ class Navigator {
                 }
                 if (elem.length) {
                     elem.addClass('jenkins-nav-search-result-selected')
+                    elem[0].scrollIntoViewIfNeeded(false)
                 } else {
                     elem = $('div.jenkins-nav-search-result')
                     if ($('input#jenkins-navigator-prompt').is(':focus') && elem.length) {
                         $('input#jenkins-navigator-prompt').blur()
                         elem = elem[e.originalEvent.code == "ArrowDown" ? 'first' : 'last']()
-                        elem?.addClass('jenkins-nav-search-result-selected')
+                        if (elem.length) {
+                            elem.addClass('jenkins-nav-search-result-selected')
+                            elem[0].scrollIntoViewIfNeeded(false)
+                        }
                     } else {
                         $('input#jenkins-navigator-prompt').focus()
+                        $('div#jenkins-navigator-results').scrollTop(0)
                     }
                 }
                 return false
@@ -149,11 +156,10 @@ class Navigator {
         }
     }
 
-    #showResults(results, number) {
+    #showResults(results) {
         $('div[id^=jenkins-navigator-result-]').remove()
-        results = results.slice(0, number)
         results.forEach((res, num) => {
-            $('div#jenkins-navigator-container').append(`<div id='jenkins-navigator-result-${num}' class='jenkins-nav-search-result'>\
+            $('div#jenkins-navigator-results').append(`<div id='jenkins-navigator-result-${num}' class='jenkins-nav-search-result'>\
                 ${res.score == -Infinity ? res.target : fuzzysort.highlight(res, "<span style='color:red'>", "</span>")}</div>`)
             if (res.obj.opensMenu) {
                 $(`#jenkins-navigator-result-${num}`).append(`<img src='${chrome.runtime.getURL('media/icon-menu.svg')}' class='jenkins-nav-menu-img' id=jenkins-navigator-result-menu-${num}/>`)

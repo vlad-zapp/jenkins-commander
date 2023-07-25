@@ -23,7 +23,7 @@ class GroovyScripts {
     static revealCredentials = `
         def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials( com.cloudbees.plugins.credentials.Credentials.class, Jenkins.instance, null, null ).findAll {it.id=='$ID'}
         for (c in creds) {
-            c.properties.findAll { !(['descriptor', 'privateKey', 'class', 'scope', 'usernameSecret'].contains(it.key)) } .each { println it; println ''; }
+            c.properties.findAll { !(['descriptor', 'privateKey', 'class', 'scope', 'usernameSecret', 'privateKeySource'].contains(it.key)) } .each { println it; println ''; }
         }
     `;
 

@@ -35,12 +35,10 @@ class HotkeyBinding {
 
 class Menu {
     searchForEmpty
-    maxResults
     header
     items
-    constructor(searchForEmpty, maxResults = 10) {
+    constructor(searchForEmpty) {
         this.searchForEmpty = searchForEmpty
-        this.maxResults = maxResults
     }
 }
 
