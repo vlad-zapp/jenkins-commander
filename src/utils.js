@@ -16,7 +16,7 @@ function getJob(jobUrl) {
     }
 }
 
-function getLastBuild(jobUrl) {
+function getLastBuild(jobUrl, timestamp) {
     return getJob(jobUrl).lastBuild.url
 }
 

@@ -1,27 +1,26 @@
 class JobSearchMenu extends Menu {
     constructor(context) {
         super(false)
-        return (async () => {
-            const storedItems = (await DbStorage.get(context.hostname)).split('//');
-            this.items = storedItems.map(j => new JobSearchItem(j)).concat([
-                new UrlActionItem("/script", "/script"),
-                new UrlActionItem("/script-approval", "/scriptApproval/#footer"),
-                new UrlActionItem("/all-builds-history", "/view/all/builds"),
-                new UrlActionItem("/plugins", "/pluginManager/installed"),
-                new UrlActionItem("/users", "/securityRealm/"),
-                new UrlActionItem("/credentials", "/credentials/"),
-                new UrlActionItem("/log", "/log/all"),
-                new SettingsMenuItem("/nodes", "/computer/", () => requestJenkinsJson('/computer/api/json')
-                    .computer.map(c => new UrlActionItem(
-                        c.displayName,
-                        appendUrl(location.origin,
-                            `computer/${c.displayName == 'Built-In Node' ? '(built-in)' : c.displayName}/`
-                        )
-                    ))
-                )
-            ])
-            return this;
-        })();
+        cacheJobs();
+        const storedItems = DbStorage.get(context.hostname).split('//');
+        this.items = storedItems.map(j => new JobSearchItem(j)).concat([
+            new UrlActionItem("/script", "/script"),
+            new UrlActionItem("/script-approval", "/scriptApproval/#footer"),
+            new UrlActionItem("/all-builds-history", "/view/all/builds"),
+            new UrlActionItem("/plugins", "/pluginManager/installed"),
+            new UrlActionItem("/users", "/securityRealm/"),
+            new UrlActionItem("/log", "/log/all"),
+            new SettingsMenuItem("/nodes", "/computer/", () => requestJenkinsJson('/computer/api/json')
+                .computer.map(c => new UrlActionItem(
+                    c.displayName,
+                    appendUrl(location.origin,
+                        `computer/${c.displayName == 'Built-In Node' ? '(built-in)' : c.displayName}/`
+                    )
+                ))
+            ),
+            new MenuItem("/global-variables", [], () => new GlobalVarsMenu()),
+            new MenuItem("/credentials", [], () => new CredentialsMenu())
+        ])
     }
 }
 

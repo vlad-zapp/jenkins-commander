@@ -21,12 +21,17 @@ function requestJenkinsJson(url, method = 'GET', data = null) {
     }
 }
 
+function runGroovyScript(script) {
+    const req = requestJenkins("/scriptText", method = 'POST', data = `script=${script}`);
+    return req.responseText;
+}
+
 function restart(jobUrl) {
     request = requestJenkins(appendUrl(jobUrl, '/rebuild'))
     if (request.responseURL.match(/rebuild\/parameterized(?:\/)?$/i)) {
         $('#restartFrame').remove()
         $(`<iframe src="${request.responseURL}" id="restartFrame" style="visibility:hidden; height:1px" />`).appendTo('body')
-        $('#restartFrame').on('load', ()=>$('#restartFrame').contents().find("form[name=config] button:submit").click())
+        $('#restartFrame').on('load', () => $('#restartFrame').contents().find("form[name=config] button:submit").click())
         return true
     }
 
@@ -74,7 +79,7 @@ function doc_keyDown(e) {
     }
 
     //alt-/: open navigation prompt
-    if (e.code == 'Slash' && e.altKey) {
+    if (e.code == 'Slash' && (e.altKey || e.metaKey)) {
         nav.toggle()
     }
 }
@@ -89,6 +94,48 @@ function silentReload() {
 document.addEventListener('keydown', doc_keyDown, false);
 $('form[role=search]').remove()
 nav = new Navigator(location.host)
+
+var observer = new MutationObserver(function (mutations) {
+    if (window.location.hash) {
+        const hashCmds = window.location.hash.split(':::').map(e => e.split('::'))
+        hashCmds.forEach(hashCmd => {
+            switch (hashCmd[0]) {
+                case "#highlight":
+                    hashCmd.slice(1).forEach(arg => {
+                        const found = $(arg)
+                        if (found.length) {
+                            found.css('border', '3px solid red')
+                            found[0].scrollIntoView({ 'block': 'center' })
+                            const observer2 = new window.IntersectionObserver(([entry]) => {
+                                if (entry.isIntersecting) {
+                                    observer.disconnect();
+                                    observer2.disconnect();
+                                    return
+                                }
+                            }, {
+                                root: null,
+                                threshold: 1,
+                            })
+                            observer2.observe(found[0]);
+                        }
+                    })
+                    break;
+            }
+        })
+    }
+});
+
+observer.observe(document, { attributes: false, childList: true, characterData: false, subtree: true });
+
+$(window).on('hashchange', function () {
+    window.location.reload(true);
+});
+
+$(window).on('load', () => {
+    if (CredentialsDetailsPage.Identify()) {
+        CredentialsDetailsPage.EnableReveal()
+    }
+});
 
 //cacheJobs()
 // new Promise(() => {

@@ -23,7 +23,10 @@ function getScript(host) {
             "src/menus/jobSearchMenu.js",
             "src/menus/jobActionsMenu.js",
             "src/menus/itemsMenu.js",
-            "src/commander.js"
+            "src/menus/globalVarsMenu.js",
+            "src/menus/credentialsMenu.js",
+            "src/commander.js",
+            "src/groovyScripts.js"
         ],
         "css": ["styles.css"]
     }]

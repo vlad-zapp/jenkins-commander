@@ -17,7 +17,7 @@ class Navigator {
     #currentMenu
 
     constructor(hostname) {
-        (async () => this.#defaultMenu = await new JobSearchMenu({ hostname: hostname }))()
+        this.#defaultMenu = new JobSearchMenu({ hostname: hostname });
     }
 
     isVisible() {
@@ -63,12 +63,8 @@ class Navigator {
         }
     }
 
-    cacheJobs() {
-        console.log('caching jobs')
-        cacheJobs()
-    }
-
     #show() {
+        this.#currentMenu = this.#defaultMenu;
         if ($('div#jenkins-navigator-overlay').length == 0) {
             $('body').append(elementCode)
             $('input#jenkins-navigator-prompt')
@@ -138,10 +134,10 @@ class Navigator {
                 break
             default:
                 var elem = $('div.jenkins-nav-search-result-selected')
-                if (elem.length == 0) {
+                if (elem.length == 0 && e.originalEvent.code == "Enter") {
                     elem = $('div.jenkins-nav-search-result').first()
                 }
-                if (elem.length == 0 && e.originalEvent.code != "Enter") {
+                if (elem.length == 0) {
                     return;
                 }
                 const event = jQuery.Event('interact');

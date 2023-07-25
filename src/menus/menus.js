@@ -48,17 +48,40 @@ class MenuItem {
     name
     bindings = []
     opensMenu = false
+    opensMenuByDefault = true
+
+    constructor(name, bindings, subMenuLoader) {
+        this.name = name
+        this.addBindings(bindings)
+        this.addMenu(subMenuLoader)
+    }
+
+    #getMenu(menu) {
+        if(typeof(menu) != 'function') {
+            return menu
+        }
+        return menu()
+    }
 
     addMenu(menu, description = "Open menu") {
+        if (!menu) {
+            return;
+        }
         this.addBindings([{
             key: new HotkeyBinding("Shift+Enter", description),
-            action: n => n.openMenu(menu)
+            action: n => n.openMenu(this.#getMenu(menu))
+        },
+        {
+            key: new HotkeyBinding("Enter", description),
+            action: n => { if (this.opensMenuByDefault) n.openMenu(this.#getMenu(menu)) }
         }])
         this.opensMenu = true
     }
 
     addBindings(moreBindings) {
-        this.bindings = this.bindings.concat(moreBindings)
+        if (moreBindings) {
+            this.bindings = this.bindings.concat(moreBindings)
+        }
     }
 
     act(event, navigator) {
@@ -72,9 +95,9 @@ class UrlActionItem extends MenuItem {
     #url
 
     constructor(name, url) {
-        super()
+        super(name)
+        this.opensMenuByDefault = false
         this.#url = url
-        this.name = name
         this.bindings = [
             {
                 key: new HotkeyBinding("Enter", "Open"),
@@ -88,18 +111,18 @@ class UrlActionItem extends MenuItem {
     }
 
     getUrl(url = this.#url) {
-        try{
+        try {
             return url instanceof Function
                 ? url()
                 : url
-        } catch(e) {
+        } catch (e) {
             return null
         }
     }
 
     navigate(navigator, url, newWindow = false) {
         const gotoUrl = this.getUrl(url)
-        if(gotoUrl) {
+        if (gotoUrl) {
             navigator.navigate(gotoUrl, newWindow)
         } else {
             window.alert('Not available')

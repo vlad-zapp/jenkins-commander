@@ -52,3 +52,25 @@ class JobConfigurationPage {
         return getLastBuild(url)
     }
 }
+
+class CredentialsDetailsPage {
+    static Identify() {
+        return (location.pathname.match('/credentials/store/system/domain/[^/]+/credential/[^/]+/$')?.length > 0) ?? false;
+    }
+
+    static EnableReveal() {
+        $(`<a href='#' id='reveal-cred')'>Reveal</a><br/><br/>`).insertAfter('div#main-panel h1')
+        $('a#reveal-cred').on('click', ()=> {
+            const id = location.pathname.split('/').filter(x=>x)[6]
+            console.log(id);
+            const reveal = runGroovyScript(GroovyScripts.revealCredentials.replace('$ID', id))
+            $(`<div style='white-space: pre-line; border: 1px dashed black; padding: inherit;'>${reveal}</div><br/><br/>`).insertAfter('a#reveal-cred')
+            $('a#reveal-cred').remove()
+            return false;
+        })
+    }
+}
+
+function revealCreds(id) {
+    
+}
