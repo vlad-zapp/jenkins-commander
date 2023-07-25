@@ -5,8 +5,8 @@ class JobActionsMenu extends Menu {
         this.items = [
             new UrlActionItem("Overview", url),
             new UrlActionItem("Configure", appendUrl(url, '/configure')),
-            new JobBuildActionItem("Last build", () => getLastBuild(url)),
-            new JobBuildActionItem("My Last build", () => getMyLastBuild(url)),
+            new JobBuildActionItem("Last build", () => getLastBuild(url)?.url),
+            new JobBuildActionItem("My Last build", () => getMyLastBuild(url)?.url),
         ]
     }
 }

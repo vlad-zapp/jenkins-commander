@@ -4,6 +4,22 @@ function sleep(ms) {
     return true;
 }
 
+function doWithRetry(number, duration, code) {
+    if (number > 0) {
+        try {
+            code()
+        } catch(e) {
+            if (number == 1) {
+                throw e;
+            } else {
+                setTimeout(()=>doWithRetry(number-1, duration, code), duration)
+            }
+        }
+    } else {
+        throw new Error('Timed out, no more retries')
+    }
+}
+
 function appendUrl(url, appendix) {
     return `${url.replace(/\/*$/, '')}/${appendix.replace(/^\/*/, '')}`
 }
@@ -16,19 +32,17 @@ function getJob(jobUrl) {
     }
 }
 
-function getLastBuild(jobUrl, timestamp) {
-    return getJob(jobUrl).lastBuild.url
+function getLastBuild(jobUrl) {
+    return getJob(jobUrl)?.lastBuild
 }
 
-function getMyLastBuild(jobUrl) {
+function getMyLastBuild(jobUrl, minTimestamp) {
     const userId = requestJenkinsJson(appendUrl(location.origin, '/me/api/json')).id
-    const build = requestJenkinsJson(appendUrl(jobUrl, '/api/json?tree=builds[url,actions[causes[*]]]'))
-        .builds
-        .find(b => b?.actions?.some(a => a?.causes?.some(c => {
-            return c?.userId == userId ||
-                (c?._class === "com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritUserCause" && c?.userName == userId)
+    const builds = requestJenkinsJson(appendUrl(jobUrl, '/api/json?tree=builds[url,timestamp,actions[causes[*]]]')).builds
+    const build = builds.find(b => (minTimestamp ? Number(b.timestamp) > Number(minTimestamp) : true) && b?.actions?.some(a => a?.causes?.some(c => {
+            return c?.userId == userId || (c?._class === "com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritUserCause" && c?.userName == userId)
         })))
-    return build.url
+    return build
 }
 
 function cacheJobs() {

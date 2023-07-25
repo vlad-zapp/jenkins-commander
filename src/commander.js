@@ -54,15 +54,16 @@ function jumpToConsole(jobBuildUrl, newTab = false) {
 function doc_keyDown(e) {
     // alt-r: restart job and go to console
     if (e.code == 'KeyR' && e.altKey) {
+        const currentServerTimestamp = runGroovyScript(GroovyScripts.getServerDate)
         if (JobOverviewPage.Identify()) {
             if (restart(JobOverviewPage.GetCurrentBuild())) {
-                jumpToConsole(JobOverviewPage.GetLastBuild())
+                goToConsole(JobOverviewPage.GetMyLastBuild, currentServerTimestamp)
             }
         } else if (JobRerunPage.Identify()) {
             JobRerunPage.Rebuild()
         } else if (JobRunPage.Identify()) {
             if (restart(JobRunPage.GetCurrentBuild())) {
-                jumpToConsole(JobRunPage.GetLastBuild())
+                goToConsole(JobRunPage.GetMyLastBuild, currentServerTimestamp)
             }
         }
     }
@@ -82,6 +83,16 @@ function doc_keyDown(e) {
     if (e.code == 'Slash' && (e.altKey || e.metaKey)) {
         nav.toggle()
     }
+}
+
+function goToConsole(method, minTimestamp) {
+    doWithRetry(10, 300, () => {
+        const newBuildUrl = method(minTimestamp)?.url
+        if (newBuildUrl) {
+            return jumpToConsole(newBuildUrl)
+        }
+        throw new Error('No suitable build found')
+    });
 }
 
 function silentReload() {

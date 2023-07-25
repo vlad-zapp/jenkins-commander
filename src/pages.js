@@ -7,6 +7,10 @@ class JobOverviewPage {
         return getLastBuild(location.href)
     }
 
+    static GetMyLastBuild(minTimestamp) {
+        return getMyLastBuild(location.href, minTimestamp)
+    }
+
     static GetCurrentBuild() {
         return this.GetLastBuild()
     }
@@ -20,6 +24,11 @@ class JobRunPage {
     static GetLastBuild() {
         const url = appendUrl(location.href.match('^.*/job/[^/]+')[0], '/api/json')
         return getLastBuild(url)
+    }
+
+    static GetMyLastBuild(minTimestamp) {
+        const url = appendUrl(location.href.match('^.*/job/[^/]+')[0], '/api/json')
+        return getMyLastBuild(url, minTimestamp)
     }
 
     static GetCurrentBuild() {
@@ -69,8 +78,4 @@ class CredentialsDetailsPage {
             return false;
         })
     }
-}
-
-function revealCreds(id) {
-    
 }

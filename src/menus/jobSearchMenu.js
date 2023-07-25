@@ -31,19 +31,19 @@ class JobSearchItem extends UrlActionItem {
         this.addBindings([
             {
                 key: new HotkeyBinding("KeyL", "Open last build"),
-                action: n => this.navigate(n, () => getLastBuild(this.getUrl()))
+                action: n => this.navigate(n, () => getLastBuild(this.getUrl())?.url)
             },
             {
                 key: new HotkeyBinding("Ctrl+KeyL", "Open last build in new tab"),
-                action: n => this.navigate(n, () => getLastBuild(this.getUrl()), true)
+                action: n => this.navigate(n, () => getLastBuild(this.getUrl())?.url, true)
             },
             {
                 key: new HotkeyBinding("KeyM", "Open my last build"),
-                action: n => this.navigate(n, () => getMyLastBuild(this.getUrl()))
+                action: n => this.navigate(n, () => getMyLastBuild(this.getUrl())?.url)
             },
             {
                 key: new HotkeyBinding("Ctrl+KeyM", "Open my last build in new tab"),
-                action: n => this.navigate(n, () => getMyLastBuild(this.getUrl()), true)
+                action: n => this.navigate(n, () => getMyLastBuild(this.getUrl())?.url, true)
             },
         ])
     }
