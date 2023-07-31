@@ -1,7 +1,7 @@
 class CredentialsMenu extends Menu {
-    constructor() {
+    constructor(customTitle) {
         super(true)
-        this.header = 'Credentials'
+        this.header = customTitle ?? 'Credentials'
         this.items = JSON.parse(runGroovyScript(GroovyScripts.getCredentials)).map(e => new CredentialsItem(e[0], e[1]))
     }
 }

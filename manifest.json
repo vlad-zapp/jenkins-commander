@@ -4,7 +4,7 @@
   "description": "Toolset for jenkins to make your life easier",
   "version": "0.1",
   "permissions": [
-    "storage", "scripting", "tabs"
+    "storage", "scripting", "tabs", "cookies"
   ],
   "host_permissions": [
     "http://*/*", "https://*/*"
@@ -16,7 +16,7 @@
     "default_title": "Jenkins Commander"
   },
   "icons": {
-    "48": "media/icon-on-32.png"
+    "48": "media/icon-off-32.png"
   },
   "web_accessible_resources": [{
     "matches": ["<all_urls>"],

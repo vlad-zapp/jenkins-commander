@@ -22,8 +22,12 @@ function requestJenkinsJson(url, method = 'GET', data = null) {
 }
 
 function runGroovyScript(script) {
-    const req = requestJenkins("/scriptText", method = 'POST', data = `script=${script}`);
+    const req = requestJenkins('/scriptText', method = 'POST', data = `script=${script}`);
     return req.responseText;
+}
+
+async function runRemoteGroovyScript(script, server) {
+    return await chrome.runtime.sendMessage({ action: 'exec', script: script, server: server })
 }
 
 function restart(jobUrl) {
@@ -146,6 +150,13 @@ $(window).on('load', () => {
     if (CredentialsDetailsPage.Identify()) {
         CredentialsDetailsPage.EnableReveal()
     }
+
+    chrome.runtime.sendMessage({
+        action: 'report_crumb',
+        server: window.location.origin,
+        crumbHeader: $('head').attr('data-crumb-header'),
+        crumbValue: $('head').attr('data-crumb-value')
+    })
 });
 
 //cacheJobs()

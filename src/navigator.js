@@ -1,7 +1,8 @@
-const inputCode = "<input class='jenkins-nav-prompt-input' id='jenkins-navigator-prompt' />"
+const inputCode = "<input class='jenkins-nav-prompt-input' id='jenkins-navigator-prompt' autocomplete='off' />"
 
 const elementCode = `\
     <div id='jenkins-navigator-overlay' class='jenkins-nav-overlay'>\
+        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>\
         <div id='jenkins-navigator-container' class='jenkins-nav-container'>\
             <br/><div class='jenkins-nav-header'></div>\
             <div class='jenkins-nav-prompt-div'>\
@@ -35,10 +36,23 @@ class Navigator {
         }
     }
 
+    toggleLoader(on) {
+        if (on) {
+            $('div.lds-ring').show()
+            $('div#jenkins-navigator-container').hide()
+        } else {
+            $('div.lds-ring').hide()
+            $('div#jenkins-navigator-container').show()
+
+            // hack. jquery .focus() don't work here for some reason
+            document.getElementById('jenkins-navigator-prompt').focus()
+        }
+    }
+
     openMenu(newMenu) {
         if (newMenu.header) {
             $('div.jenkins-nav-header').text(newMenu.header)
-            $('div.jenkins-nav-header').css('visibility', 'visible')
+            $('div.jenkins-nav-header').show()
         }
 
         $('input#jenkins-navigator-prompt').val('')
@@ -49,7 +63,6 @@ class Navigator {
         if (this.#currentMenu.searchForEmpty) {
             $('input#jenkins-navigator-prompt').trigger('input')
         }
-
         $('input#jenkins-navigator-prompt').focus()
     }
 
@@ -66,6 +79,7 @@ class Navigator {
     }
 
     #show() {
+        $('body').addClass('stop-scrolling')
         this.#currentMenu = this.#defaultMenu;
         if ($('div#jenkins-navigator-overlay').length == 0) {
             $('body').append(elementCode)
@@ -83,9 +97,12 @@ class Navigator {
                     this.#showResults(matches)
                 })
 
-            $('div#jenkins-navigator-overlay').on('click', this.#hide)
+            //$('div#jenkins-navigator-overlay').on('click', this.#hide)
             $('img.jenkins-nav-update-img').height($('input#jenkins-navigator-prompt').height())
+            $('div.jenkins-nav-header').hide()
         }
+
+        this.toggleLoader(false)
 
         $('body').on('keydown.navigator', e => this.#onInput(e, this))
         this.#currentMenu = this.#defaultMenu
@@ -96,6 +113,7 @@ class Navigator {
     }
 
     #hide() {
+        $('body').removeClass('stop-scrolling')
         $('body').off('.navigator')
         $('div.jenkins-nav-header').text('')
         $('div.jenkins-nav-header').hide()
@@ -153,21 +171,41 @@ class Navigator {
                 event.altKey = e.originalEvent.altKey
                 event.code = e.originalEvent.code
                 elem.trigger(event)
+                e.preventDefault()
         }
     }
 
     #showResults(results) {
         $('div[id^=jenkins-navigator-result-]').remove()
-        results.forEach((res, num) => {
-            $('div#jenkins-navigator-results').append(`<div id='jenkins-navigator-result-${num}' class='jenkins-nav-search-result'>\
-                ${res.score == -Infinity ? res.target : fuzzysort.highlight(res, "<span style='color:red'>", "</span>")}</div>`)
-            if (res.obj.opensMenu) {
-                $(`#jenkins-navigator-result-${num}`).append(`<img src='${chrome.runtime.getURL('media/icon-menu.svg')}' class='jenkins-nav-menu-img' id=jenkins-navigator-result-menu-${num}/>`)
-            }
+        return new Promise((res, rej) => {
+            results.forEach((result, num) => {
+                $('div#jenkins-navigator-results').append(this.#renderResult(result, `jenkins-navigator-result-${num}`))
+                this.#bindResult(result, `jenkins-navigator-result-${num}`)
 
-            $(`div#jenkins-navigator-result-${num}`)
-                .on('interact', e => res.obj.act(e, this))
-                .on('click', e => res.obj.act(e, this))
+                result.obj.redraw = () => {
+                    const wasSelected = $(`div#jenkins-navigator-result-${num}`).hasClass('jenkins-nav-search-result-selected')
+                    $(`div#jenkins-navigator-result-${num}`).replaceWith(this.#renderResult(result, `jenkins-navigator-result-${num}`, wasSelected)).focus()
+                    this.#bindResult(result, `jenkins-navigator-result-${num}`)
+                }
+
+                result.obj.showLoadingScreen = () => this.toggleLoader(true);
+                result.obj.hideLoadingScreen = () => this.toggleLoader(false);
+            });
+            res()
         });
+    }
+
+    #renderResult(result, resultId, selected) {
+        return `<div id='${resultId}' class='jenkins-nav-search-result${selected ? ' jenkins-nav-search-result-selected' : ''}'>\
+        ${this.#currentMenu instanceof SelectingMenu ? (result.obj.selected ? '[x]' : '[<span style=\'opacity: 0\'>x</span>]') : ''}
+        ${result.score == -Infinity ? result.target : fuzzysort.highlight(result, "<span style='color:red'>", "</span>")}
+        ${result.obj.opensMenu ? `<img src='${chrome.runtime.getURL('media/icon-menu.svg')}' class='jenkins-nav-menu-img' id=menu-${resultId}/>` : ''}
+        </div>`;
+    }
+
+    #bindResult(result, resultId) {
+        $(`div#${resultId}`)
+            .on('interact', e => { result.obj.act(e, this).then(x => e.preventDefault()) })
+            //.on('click', e => { result.obj.act(e, this).then(x => e.preventDefault()) })
     }
 }

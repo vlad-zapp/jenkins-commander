@@ -48,17 +48,14 @@ class MenuItem {
     opensMenu = false
     opensMenuByDefault = true
 
+    showLoadingScreen
+    hideLoadingScreen
+    redraw
+
     constructor(name, bindings, subMenuLoader) {
         this.name = name
         this.addBindings(bindings)
         this.addMenu(subMenuLoader)
-    }
-
-    #getMenu(menu) {
-        if(typeof(menu) != 'function') {
-            return menu
-        }
-        return menu()
     }
 
     addMenu(menu, description = "Open menu") {
@@ -67,13 +64,21 @@ class MenuItem {
         }
         this.addBindings([{
             key: new HotkeyBinding("Shift+Enter", description),
-            action: n => n.openMenu(this.#getMenu(menu))
+            action: async n => await openMenu(menu).then(m => n.openMenu(m))
         },
         {
             key: new HotkeyBinding("Enter", description),
-            action: n => { if (this.opensMenuByDefault) n.openMenu(this.#getMenu(menu)) }
+            action: async n => { if (this.opensMenuByDefault) await openMenu(menu).then(m => n.openMenu(m)) }
         }])
         this.opensMenu = true
+
+        async function openMenu(menu) {
+            const instance = typeof (menu) == 'function' ? await menu() : menu
+            if (instance.init) {
+                await instance.init()
+            }
+            return instance
+        }
     }
 
     addBindings(moreBindings) {
@@ -82,10 +87,24 @@ class MenuItem {
         }
     }
 
-    act(event, navigator) {
-        this.bindings
-            .filter(b => b.key.isMatch(event))
-            .forEach(a => a.action(navigator))
+    async act(event, navigator) {
+        var loading = true
+        if (this.showLoadingScreen) {
+            //setTimeout(() => {
+            if (loading) {
+                this.showLoadingScreen()
+            }
+            //}, 500);
+        }
+
+        for (var x of this.bindings.filter(b => b.key.isMatch(event))) {
+            await x.action(navigator)
+        }
+
+        loading = false
+        if (this.hideLoadingScreen) {
+            this.hideLoadingScreen()
+        }
     }
 }
 
@@ -126,4 +145,45 @@ class UrlActionItem extends MenuItem {
             window.alert('Not available')
         }
     }
+}
+
+class SelectingMenu extends Menu {
+    #init
+    #submitAction
+    items
+    constructor(header, items, submitAction, init) {
+        super(true)
+        this.header = header
+        this.#init = init
+        this.items = items
+        this.#submitAction = submitAction
+        this.items?.forEach(i => i.submitAction = () => submitAction(this.items.filter(i => i.selected)))
+    }
+
+    async init() {
+        if (this.#init) await this.#init(this);
+        this.items?.forEach(i => i.submitAction = () => this.#submitAction(this.items.filter(i => i.selected)))
+    }
+}
+
+class SelectableMenuItem extends MenuItem {
+    constructor(name, value) {
+        super(name)
+        this.submitAction = undefined
+        this.value = value
+        this.selected = false
+        this.bindings = [
+            {
+                key: new HotkeyBinding("Space", "Select"),
+                action: n => { this.selected = !this.selected; if (this.redraw) this.redraw() }
+            },
+            {
+                key: new HotkeyBinding("Enter", "Submit"),
+                action: n => this.submitAction()
+            }
+        ]
+    }
+
+    submitAction
+    onSelectedChanged;
 }

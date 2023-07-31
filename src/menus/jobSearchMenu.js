@@ -8,7 +8,7 @@ class JobSearchMenu extends Menu {
             new UrlActionItem("/script-approval", "/scriptApproval/#footer"),
             new UrlActionItem("/all-builds-history", "/view/all/builds"),
             new UrlActionItem("/plugins", "/pluginManager/installed"),
-            new UrlActionItem("/users", "/securityRealm/"),
+            new UrlActionItem("/users", "/asynchPeople/"),
             new UrlActionItem("/log", "/log/all"),
             new SettingsMenuItem("/nodes", "/computer/", () => requestJenkinsJson('/computer/api/json')
                 .computer.map(c => new UrlActionItem(
@@ -19,7 +19,9 @@ class JobSearchMenu extends Menu {
                 ))
             ),
             new MenuItem("/global-variables", [], () => new GlobalVarsMenu()),
-            new MenuItem("/credentials", [], () => new CredentialsMenu())
+            new MenuItem("/credentials", [], () => new CredentialsMenu()),
+            new MenuItem('/switch-server', [], () => new ServersMenu()),
+            new MenuItem('/utils', [], () => new UtilsMenu())
         ])
     }
 }
