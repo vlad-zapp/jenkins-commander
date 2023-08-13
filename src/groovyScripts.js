@@ -18,6 +18,8 @@ class GroovyScripts {
         import com.cloudbees.plugins.credentials.domains.*
         import groovy.json.*
 
+        //sleep(3000)
+
         def credentialsProvider = Jenkins.instance.getExtensionList('com.cloudbees.plugins.credentials.SystemCredentialsProvider')[0]
         println JsonOutput.toJson(credentialsProvider.domainCredentials.collectMany { 
             domain -> credentialsProvider.getCredentials(domain.domain).collect { [(domain.domain.name ?: ''), it.id] }
@@ -49,6 +51,20 @@ class GroovyScripts {
                         .join('\\n\\n')
             }`
     };
+
+    static setVariable(prototype) {
+        return `
+            import jenkins.model.*
+            import groovy.json.*
+
+            instance = Jenkins.getInstance()
+            globalNodeProperties = instance.getGlobalNodeProperties()
+            envVarsProperty = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class).first()
+
+            envVarsProperty.getEnvVars().put("${prototype[0]}","${prototype[1]}")
+            return
+        `
+    }
 
     static deleteCredentials(prototype) {
         return `
@@ -85,7 +101,7 @@ class GroovyScripts {
                             CredentialsScope.${prototype.scope},
                             ${quoted(prototype.id)},
                             ${quoted(prototype.description)},
-                            ${quoted(prototype.name)},
+                            ${quoted(prototype.username)},
                             ${quoted(prototype.password)})
                     `
                 case "class com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey":
@@ -107,7 +123,7 @@ class GroovyScripts {
                             new Secret(${quoted(prototype.secret)}))
                     `
                 default:
-                    console.log(`ERROR: Unknown credential class: ${it.value.class}`)
+                    console.log(`ERROR: Unknown credentials class: ${it.value.class}`)
             }
         }
     }

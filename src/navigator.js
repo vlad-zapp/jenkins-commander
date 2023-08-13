@@ -159,7 +159,7 @@ class Navigator {
                 break
             default:
                 var elem = $('div.jenkins-nav-search-result-selected')
-                if (elem.length == 0 && e.originalEvent.code == "Enter") {
+                if (elem.length == 0 && e.originalEvent.key == "Enter") {
                     elem = $('div.jenkins-nav-search-result').first()
                 }
                 if (elem.length == 0) {
@@ -206,6 +206,6 @@ class Navigator {
     #bindResult(result, resultId) {
         $(`div#${resultId}`)
             .on('interact', e => { result.obj.act(e, this).then(x => e.preventDefault()) })
-            //.on('click', e => { result.obj.act(e, this).then(x => e.preventDefault()) })
+        //.on('click', e => { result.obj.act(e, this).then(x => e.preventDefault()) })
     }
 }

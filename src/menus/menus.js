@@ -26,7 +26,7 @@ class HotkeyBinding {
     }
 
     isMatch(e) {
-        return (this.keyCode == e.code || this.keyCode == "Enter" && e.type == "click") &&
+        return (this.keyCode == e.code || (this.keyCode == "Enter" ? e.code == "NumpadEnter" : false)) &&
             this.shift === e.shiftKey &&
             this.ctrl === e.ctrlKey &&
             this.alt === e.altKey
@@ -140,6 +140,9 @@ class UrlActionItem extends MenuItem {
     navigate(navigator, url, newWindow = false) {
         const gotoUrl = this.getUrl(url)
         if (gotoUrl) {
+            if(!newWindow) {
+                this.hideLoadingScreen = null
+            }
             navigator.navigate(gotoUrl, newWindow)
         } else {
             window.alert('Not available')

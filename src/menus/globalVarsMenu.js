@@ -8,7 +8,7 @@ class GlobalVarsMenu extends Menu {
 
 class GlobalVarsItem extends UrlActionItem {
     constructor(name, value) {
-        super(`${name} = ${value}`, `/configure#highlight::input[value=${name}].jenkins-input`)
+        super(`${name} = ${value}`, `/configure#highlight::input[name=env\\.key][value=${name.replace( /(:|\.|\[|\]|,|=|@)/g, "\\$1" )}].jenkins-input`)
         // this.addBindingsWithMenu([
         //     {
         //         key: new HotkeyBinding("KeyC", "Copy Value"),
