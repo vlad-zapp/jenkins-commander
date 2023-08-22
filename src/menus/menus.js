@@ -88,20 +88,14 @@ class MenuItem {
     }
 
     async act(event, navigator) {
-        var loading = true
         if (this.showLoadingScreen) {
-            //setTimeout(() => {
-            if (loading) {
-                this.showLoadingScreen()
-            }
-            //}, 500);
+            this.showLoadingScreen()
         }
 
         for (var x of this.bindings.filter(b => b.key.isMatch(event))) {
             await x.action(navigator)
         }
 
-        loading = false
         if (this.hideLoadingScreen) {
             this.hideLoadingScreen()
         }
@@ -140,7 +134,7 @@ class UrlActionItem extends MenuItem {
     navigate(navigator, url, newWindow = false) {
         const gotoUrl = this.getUrl(url)
         if (gotoUrl) {
-            if(!newWindow) {
+            if (!newWindow) {
                 this.hideLoadingScreen = null
             }
             navigator.navigate(gotoUrl, newWindow)
@@ -160,12 +154,12 @@ class SelectingMenu extends Menu {
         this.#init = init
         this.items = items
         this.#submitAction = submitAction
-        this.items?.forEach(i => i.submitAction = () => submitAction(this.items.filter(i => i.selected)))
+        this.items?.forEach(i => i.submitAction = (n) => submitAction(this.items.filter(i => i.selected), n))
     }
 
     async init() {
         if (this.#init) await this.#init(this);
-        this.items?.forEach(i => i.submitAction = () => this.#submitAction(this.items.filter(i => i.selected)))
+        this.items?.forEach(i => i.submitAction = (n) => this.#submitAction(this.items.filter(i => i.selected), n))
     }
 }
 
@@ -175,14 +169,21 @@ class SelectableMenuItem extends MenuItem {
         this.submitAction = undefined
         this.value = value
         this.selected = false
+        this.toggleSelect = () => {
+            this.selected = !this.selected; if (this.redraw) this.redraw()
+        }
         this.bindings = [
             {
                 key: new HotkeyBinding("Space", "Select"),
-                action: n => { this.selected = !this.selected; if (this.redraw) this.redraw() }
+                action: n => { this.toggleSelect() }
+            },
+            {
+                key: new HotkeyBinding("KeyA", "Select All"),
+                action: n => { n.triggerForCurrentItems(i => i.toggleSelect()) }
             },
             {
                 key: new HotkeyBinding("Enter", "Submit"),
-                action: n => this.submitAction()
+                action: n => this.submitAction(n)
             }
         ]
     }

@@ -1,8 +1,14 @@
 const inputCode = "<input class='jenkins-nav-prompt-input' id='jenkins-navigator-prompt' autocomplete='off' />"
 
 const elementCode = `\
+
     <div id='jenkins-navigator-overlay' class='jenkins-nav-overlay'>\
         <div class="lds-ring"><div></div><div></div><div></div><div></div></div>\
+
+        <div id='jenkins-navigator-logs' class='jenkins-nav-container'>
+            <div id='jenkins-navigator-log-output' class='jenkins-nav-log'></div>
+        </div>
+
         <div id='jenkins-navigator-container' class='jenkins-nav-container'>\
             <br/><div class='jenkins-nav-header'></div>\
             <div class='jenkins-nav-prompt-div'>\
@@ -18,6 +24,7 @@ const elementCode = `\
 class Navigator {
     #defaultMenu
     #currentMenu
+    #currentResults
 
     constructor(hostname) {
         this.#defaultMenu = new JobSearchMenu({ hostname: hostname });
@@ -42,11 +49,34 @@ class Navigator {
             $('div#jenkins-navigator-container').hide()
         } else {
             $('div.lds-ring').hide()
-            $('div#jenkins-navigator-container').show()
-
-            // hack. jquery .focus() don't work here for some reason
-            document.getElementById('jenkins-navigator-prompt').focus()
+            if (!$('div#jenkins-navigator-logs').is(':visible')) {
+                $('div#jenkins-navigator-container').show()
+                // hack. jquery .focus() don't work here for some reason
+                document.getElementById('jenkins-navigator-prompt').focus()
+            }
         }
+    }
+
+    openLog(clearPrevious = true) {
+        return new Promise((res, rej) => {
+            if (clearPrevious) {
+                $('#jenkins-navigator-log-output').empty()
+            }
+            $('div#jenkins-navigator-container').hide('fast', () => {
+                $('div#jenkins-navigator-logs').show('fast', () => res())
+            })
+        });
+    }
+
+    appendLog(logRecord) {
+        return new Promise((res, rej) => {
+            $('#jenkins-navigator-log-output').append(`[${new Date().toLocaleTimeString()}] ${logRecord}<br/>`);
+            const objDiv = document.getElementById("jenkins-navigator-log-output");
+            objDiv.scrollTop = objDiv.scrollHeight;
+            setTimeout(function () {
+                res()
+            }, 1);
+        });
     }
 
     openMenu(newMenu) {
@@ -78,6 +108,12 @@ class Navigator {
         }
     }
 
+    triggerForCurrentItems(action) {
+        for (const result of this.#currentResults) {
+            action(result.obj)
+        }
+    }
+
     #show() {
         $('body').addClass('stop-scrolling')
         this.#currentMenu = this.#defaultMenu;
@@ -86,22 +122,36 @@ class Navigator {
             $('input#jenkins-navigator-prompt')
                 .on('click', () => false)
                 .on('input', e => {
-                    const specialPrefix = e.target.value.match(/^[^\w^\d]/)
+                    var forceEmptySearch = false;
+                    var searchTerm = e.target.value;
                     let searchItems = this.#currentMenu.items
-                    if (specialPrefix) {
-                        searchItems = searchItems.filter(i => i.name.startsWith(specialPrefix[0]))
+                    if (searchTerm.startsWith('/')) {
+                        searchItems = searchItems.filter(i => i.name.startsWith('/'))
+                        searchTerm = searchTerm.substring(1)
+                        forceEmptySearch = true;
+                    } else if (searchTerm.startsWith(':')) {
+                        try {
+                            searchItems = searchItems.filter(i => i.name.match(searchTerm.substring(1)))
+                        } catch {
+                            // incomplete regex is not an error
+                        }
+                        searchTerm = ''
+                        forceEmptySearch = true
                     } else {
                         searchItems = searchItems.filter(i => i.name.match(/^[\w\d]/))
                     }
-                    const matches = fuzzysort.go(e.target.value, searchItems, { key: 'name', all: this.#currentMenu.searchForEmpty })
+
+                    const matches = fuzzysort.go(searchTerm, searchItems, { key: 'name', all: (this.#currentMenu.searchForEmpty || forceEmptySearch) })
                     this.#showResults(matches)
                 })
 
             //$('div#jenkins-navigator-overlay').on('click', this.#hide)
+            $('div.jenkins-navigator-container').show()
             $('img.jenkins-nav-update-img').height($('input#jenkins-navigator-prompt').height())
             $('div.jenkins-nav-header').hide()
         }
 
+        $('div#jenkins-navigator-logs').hide()
         this.toggleLoader(false)
 
         $('body').on('keydown.navigator', e => this.#onInput(e, this))
@@ -117,6 +167,7 @@ class Navigator {
         $('body').off('.navigator')
         $('div.jenkins-nav-header').text('')
         $('div.jenkins-nav-header').hide()
+        $('div#jenkins-navigator-logs').hide()
         $('div#jenkins-navigator-overlay').hide()
         $('input#jenkins-navigator-prompt').val('')
         $('div[id^=jenkins-navigator-result-]').remove()
@@ -176,6 +227,7 @@ class Navigator {
     }
 
     #showResults(results) {
+        this.#currentResults = results;
         $('div[id^=jenkins-navigator-result-]').remove()
         return new Promise((res, rej) => {
             results.forEach((result, num) => {

@@ -29,36 +29,42 @@ async function importCredentials(server) {
     return menu;
 }
 
-function createVariables(selectedItems) {
+function createVariables(selectedItems, nav) {
+    nav.openLog()
     selectedItems.forEach(it => {
         const response = runGroovyScript(GroovyScripts.setVariable(it.value))
-        if(!response) {
-            console.log(`set variable '${it.value[0]}' = '${it.value[1]}'`)
+        if (!response) {
+            nav.appendLog(`set variable '${it.value[0]}' = '${it.value[1]}'`)
         } else {
-            console.log(`got unexpected response when setting var: ${response}`)
-            console.log(`var data:`, it.value)
+            nav.appendLog(`got unexpected response when setting var: ${response}`)
+            nav.appendLog(`var data:`, it.value)
         }
     })
+    nav.appendLog('<hr>Done')
 }
 
-function createCredentials(selectedItems) {
-
-    selectedItems.forEach(it => {
+async function createCredentials(selectedItems, nav) {
+    await nav.openLog()
+    for (it of selectedItems) {
         //const domain = runRemoteGroovyScript(GroovyScripts.getDomain(it.value.store, it.value.domain), server)
-        //console.log(domain)
+        //nav.appendLog(domain)
         // todo: create domain if it doesn't exist
-        const removed = getResult(runGroovyScript(GroovyScripts.deleteCredentials(it.value)))
-        const created = getResult(runGroovyScript(GroovyScripts.createCredentials(it.value)))
-        console.log(`${it.value.id}: ${removed ? 'existing value removed, ' : ''}new value ${created ? 'created' : 'not created'}`)
-    })
+        const removed = getResult(runGroovyScript(GroovyScripts.deleteCredentials(it.value)), nav)
+        const created = getResult(runGroovyScript(GroovyScripts.createCredentials(it.value)), nav)
+        await nav.appendLog(`${it.value.id}: ${removed ? 'existing value removed, ' : ''}new value ${created ? 'created' : 'not created'}`)
+    }
+    nav.appendLog('<hr>Done')
 }
 
-function getResult(output) {
+function getResult(output, nav) {
     try {
-        console.log(JSON.parse(output))
         return JSON.parse(output)
     } catch {
-        console.log(output)
-        throw new Error('Unexpected response.')
+        if (nav) {
+            nav.openLog()
+            nav.appendLog('<span style="color:red">Unexpected response:<span>')
+            nav.appendLog(output)
+        }
+        throw new Error(`Unexpected response: ${output}`)
     }
 }

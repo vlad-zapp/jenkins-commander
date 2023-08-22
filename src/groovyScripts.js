@@ -38,7 +38,7 @@ class GroovyScripts {
         .collectMany { s -> s.getDomains()
         .collectMany { d -> s.getCredentials(d).collect
             { c -> c.getProperties().findAll { !(['descriptor', 'privateKeySource'].contains(it.key)) }
-            .collectEntries({a -> ["\${a.key}":a.value.toString()]}) %2B ['domain':d.name, 'store':"\${s.displayName}"]}}})
+            .collectEntries({a -> ["\${a.key}":a.value.toString()]}) %2B ['domain':d.name, 'store':"\${s.getClass().toString()}"]}}})
     `
 
     static revealCredentials(id) {
@@ -73,7 +73,7 @@ class GroovyScripts {
             import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl
             import com.cloudbees.plugins.credentials.CredentialsScope
 
-            store = Jenkins.instance.getExtensionList("com.cloudbees.plugins.credentials.SystemCredentialsProvider").collect {it.getStore()}.find { it.displayName==${quoted(prototype.store)}}
+            store = Jenkins.instance.getExtensionList("com.cloudbees.plugins.credentials.SystemCredentialsProvider").collect {it.getStore()}.find { it.getClass().toString()==${quoted(prototype.store)}}
             domain = store.domains.find {it.name==${quoted(prototype.domain)}}
             def creds = store.getCredentials(domain).find { it.id == ${quoted(prototype.id)}}
             print store.removeCredentials(domain, creds)
@@ -87,7 +87,7 @@ class GroovyScripts {
             import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey
             import com.cloudbees.plugins.credentials.CredentialsScope
 
-            def store = Jenkins.instance.getExtensionList("com.cloudbees.plugins.credentials.SystemCredentialsProvider").collect {it.getStore()}.find { it.displayName==${quoted(prototype.store)}}
+            def store = Jenkins.instance.getExtensionList("com.cloudbees.plugins.credentials.SystemCredentialsProvider").collect {it.getStore()}.find { it.getClass().toString()==${quoted(prototype.store)}}
             def domain = store.domains.find {it.name==${quoted(prototype.domain)}}
             def cred = ${renderInstantiation(prototype)}
             print store.addCredentials(domain, cred)
