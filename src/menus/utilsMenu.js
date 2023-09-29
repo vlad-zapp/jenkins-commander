@@ -3,10 +3,17 @@ class UtilsMenu extends Menu {
         super(true)
         this.header = 'Utils'
         this.items = [
-            new MenuItem('import-variables', [], () => new ServersMenu('Select source server', s => new MenuItem(s.id, [], () => importVariables(s.id)))),
-            new MenuItem('import-credentials', [], () => new ServersMenu('Select source server', s => new MenuItem(s.id, [], () => importCredentials(s.id))))
+            new MenuItem('import-variables').setMenu(() => new ServersMenu('Select source server', s => new MenuItem(s.id).setMenu(() => importVariables(s.id)))),
+            new MenuItem('import-credentials').setMenu(() => new ServersMenu('Select source server', s => new MenuItem(s.id).setMenu(() => importCredentials(s.id)))),
+            // new MenuItem('compare-jobs').setMenu(() => new ServersMenu('Select server 1',
+            //     s1 => new MenuItem(s1.id).setMenu(() => new ServersMenu('Select server 2',
+            //         s2 => new MenuItem(s2.id).setAction(async n => await this.compareJobs(s1, s2, n))))))
         ]
     }
+}
+
+async function compareJobs(s1, s2, n) {
+    
 }
 
 async function importVariables(server) {

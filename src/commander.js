@@ -86,6 +86,10 @@ function doc_keyDown(e) {
     //alt-/: open navigation prompt
     if (e.code == 'Slash' && (e.altKey || e.metaKey)) {
         nav.toggle()
+        if(e.metaKey) {
+            nav.input('/')
+        }
+        e.preventDefault()
     }
 }
 

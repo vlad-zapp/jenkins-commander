@@ -52,13 +52,21 @@ class MenuItem {
     hideLoadingScreen
     redraw
 
-    constructor(name, bindings, subMenuLoader) {
+    constructor(name) {
         this.name = name
-        this.addBindings(bindings)
-        this.addMenu(subMenuLoader)
     }
 
-    addMenu(menu, description = "Open menu") {
+    setAction(action) {
+        this.addBindings([
+        {
+            key: new HotkeyBinding("Enter", description),
+            action: async n => action(n)
+        }])
+        this.opensMenu = false
+        return this;
+    }
+
+    setMenu(menu, description = "Open menu") {
         if (!menu) {
             return;
         }
@@ -71,6 +79,7 @@ class MenuItem {
             action: async n => { if (this.opensMenuByDefault) await openMenu(menu).then(m => n.openMenu(m)) }
         }])
         this.opensMenu = true
+        return this;
 
         async function openMenu(menu) {
             const instance = typeof (menu) == 'function' ? await menu() : menu
@@ -85,6 +94,7 @@ class MenuItem {
         if (moreBindings) {
             this.bindings = this.bindings.concat(moreBindings)
         }
+        return this;
     }
 
     async act(event, navigator) {

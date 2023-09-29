@@ -61,7 +61,7 @@ class GroovyScripts {
             globalNodeProperties = instance.getGlobalNodeProperties()
             envVarsProperty = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class).first()
 
-            envVarsProperty.getEnvVars().put("${prototype[0]}","${prototype[1]}")
+            envVarsProperty.getEnvVars().put(${quoted(prototype[0])},${quoted(prototype[1] ?? '')})
             return
         `
     }
@@ -94,7 +94,7 @@ class GroovyScripts {
         `)
 
         function renderInstantiation(prototype) {
-            switch(prototype.class) {
+            switch (prototype.class) {
                 case "class com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl":
                     return `
                         new com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl(
@@ -120,7 +120,7 @@ class GroovyScripts {
                             CredentialsScope.${prototype.scope},
                             ${quoted(prototype.id)},
                             ${quoted(prototype.description)},
-                            new Secret(${quoted(prototype.secret)}))
+                            new hudson.util.Secret(${quoted(prototype.secret)}))
                     `
                 default:
                     console.log(`ERROR: Unknown credentials class: ${it.value.class}`)
@@ -142,8 +142,15 @@ class GroovyScripts {
             print JsonOutput.toJson(store.domains.find {it.name==${quoted(id)}})
         `
     }
+
+    static getAllJobs() {
+        return `
+            Jenkins.instance.getAllItems(AbstractItem.class).each {
+                println it.fullName
+            };`
+    }
 }
 
 function quoted(value) {
-    return value ? `'${value}'` : null
+    return (value === null || value === undefined) ? null : `'${value}'`
 }

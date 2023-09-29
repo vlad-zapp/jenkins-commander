@@ -43,6 +43,10 @@ class Navigator {
         }
     }
 
+    input(string) {
+        $('input#jenkins-navigator-prompt').val(string)
+    }
+
     toggleLoader(on) {
         if (on) {
             $('div.lds-ring').show()
@@ -158,6 +162,7 @@ class Navigator {
         this.#currentMenu = this.#defaultMenu
         $('div#jenkins-navigator-overlay').css('left', window.scrollX)
         $('div#jenkins-navigator-overlay').css('top', window.scrollY)
+        $('input#jenkins-navigator-prompt').val('')
         $('div#jenkins-navigator-overlay').show()
         $('input#jenkins-navigator-prompt').focus()
     }

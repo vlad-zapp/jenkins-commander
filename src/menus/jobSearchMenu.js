@@ -18,10 +18,10 @@ class JobSearchMenu extends Menu {
                     )
                 ))
             ),
-            new MenuItem("/global-variables", [], () => new GlobalVarsMenu()),
-            new MenuItem("/credentials", [], () => new CredentialsMenu()),
-            new MenuItem('/switch-server', [], () => new ServersMenu()),
-            new MenuItem('/utils', [], () => new UtilsMenu())
+            new MenuItem("/global-variables").setMenu(() => new GlobalVarsMenu()),
+            new MenuItem("/credentials").setMenu(() => new CredentialsMenu()),
+            new MenuItem('/switch-server').setMenu(() => new ServersMenu()),
+            new MenuItem('/utils').setMenu(() => new UtilsMenu())
         ])
     }
 }
@@ -29,7 +29,7 @@ class JobSearchMenu extends Menu {
 class JobSearchItem extends UrlActionItem {
     constructor(fullName) {
         super(fullName, `/job/${fullName.split('/').join('/job/')}`)
-        this.addMenu(new JobActionsMenu(fullName, this.getUrl()))
+        this.setMenu(new JobActionsMenu(fullName, this.getUrl()))
         this.addBindings([
             {
                 key: new HotkeyBinding("KeyL", "Open last build"),
@@ -54,6 +54,6 @@ class JobSearchItem extends UrlActionItem {
 class SettingsMenuItem extends UrlActionItem {
     constructor(name, url, loader) {
         super(name, url)
-        this.addMenu(new itemsMenu(name, loader), "Open items menu")
+        this.setMenu(new itemsMenu(name, loader), "Open items menu")
     }
 }
