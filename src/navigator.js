@@ -72,6 +72,17 @@ class Navigator {
         });
     }
 
+    appendText(text) {
+        return new Promise((res, rej) => {
+            $('#jenkins-navigator-log-output').append(`${text}<br/>`);
+            const objDiv = document.getElementById("jenkins-navigator-log-output");
+            objDiv.scrollTop = objDiv.scrollHeight;
+            setTimeout(function () {
+                res()
+            }, 1);
+        });
+    }
+
     appendLog(logRecord) {
         return new Promise((res, rej) => {
             $('#jenkins-navigator-log-output').append(`[${new Date().toLocaleTimeString()}] ${logRecord}<br/>`);

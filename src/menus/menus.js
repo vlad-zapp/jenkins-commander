@@ -56,7 +56,7 @@ class MenuItem {
         this.name = name
     }
 
-    setAction(action) {
+    setAction(action, description = "Execute action") {
         this.addBindings([
         {
             key: new HotkeyBinding("Enter", description),

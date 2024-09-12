@@ -30,6 +30,17 @@ async function runRemoteGroovyScript(script, server) {
     return await chrome.runtime.sendMessage({ action: 'exec', script: script, server: server })
 }
 
+async function queryLlm(prompt, context, asHtml = true) {
+    response = await chrome.runtime.sendMessage({ action: 'llm', prompt: prompt, context: context })
+    if (asHtml) {
+        response.response = response.response
+            .replaceAll('\n', '<br/>')
+            .replaceAll(/\*\*(.*?)\*\*/g, "<b>\$1</b>")
+            .replaceAll(/\`(.*?)\`/g, "<span style=\"background-color:#DDE;\">\$1</span>")
+    }
+    return response
+}
+
 function restart(jobUrl) {
     request = requestJenkins(appendUrl(jobUrl, '/rebuild'))
     if (request.responseURL.match(/rebuild\/parameterized(?:\/)?$/i)) {
@@ -86,7 +97,7 @@ function doc_keyDown(e) {
     //alt-/: open navigation prompt
     if (e.code == 'Slash' && (e.altKey || e.metaKey)) {
         nav.toggle()
-        if(e.metaKey) {
+        if (e.metaKey) {
             nav.input('/')
         }
         e.preventDefault()

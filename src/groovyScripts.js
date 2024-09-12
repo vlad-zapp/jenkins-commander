@@ -18,13 +18,24 @@ class GroovyScripts {
         import com.cloudbees.plugins.credentials.domains.*
         import groovy.json.*
 
-        //sleep(3000)
-
         def credentialsProvider = Jenkins.instance.getExtensionList('com.cloudbees.plugins.credentials.SystemCredentialsProvider')[0]
         println JsonOutput.toJson(credentialsProvider.domainCredentials.collectMany { 
             domain -> credentialsProvider.getCredentials(domain.domain).collect { [(domain.domain.name ?: ''), it.id] }
         })
     `;
+
+    static getSignatureApprovals = `
+        import groovy.json.*
+
+        println JsonOutput.toJson( org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval.get().getApprovedSignatures() )
+    `;
+
+    static setSignatureApprovals(signatures) { 
+        return `
+            String[] data = [ ${signatures.map(quoted).join()} ]
+            org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval.get().setApprovedSignatures(data)
+        `
+    }
 
     static revealAllCredentials = `
         import jenkins.model.Jenkins

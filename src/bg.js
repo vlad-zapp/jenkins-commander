@@ -51,6 +51,11 @@ chrome.runtime.onMessage.addListener(
             runGroovyScriptBg(request.script, request.server).then(o => sendResponse(o)).then(sendResponse)
             return true;
         }
+
+        if (request?.action === 'llm') {
+            runLlmPromptBg(request.prompt, request.context).then(sendResponse)
+            return true;
+        }
     }
 )
 
@@ -169,6 +174,29 @@ async function requestJenkinsBg(url, method = 'GET', data = null) {
 
 async function runGroovyScriptBg(script, server) {
     return await requestJenkinsBg(`${server}/scriptText`, method = 'POST', data = `script=${script}`);
+}
+
+async function runLlmPromptBg(prompt, context) {
+    console.log(`query llm: ${prompt}`)
+    const requestOptions = {
+        method: "POST",
+        body: JSON.stringify(
+            {
+                "model": "llama3.1",
+                "prompt": prompt,
+                options: {
+                    "num_ctx": 16384,
+                },
+                //"context": context,
+            }
+        )
+    }
+    const resp = await fetch("http://localhost:11434/api/generate", requestOptions)
+    const responseParts = (await resp.text()).split('\n').map(x => { try { return JSON.parse(x) } catch { return null } }).filter(x => x != null)
+    const responseContext = responseParts.find(r => r.context)?.context
+
+    const finalResponse = { response: responseParts.map(r => r.response).join(""), context: responseContext }
+    return finalResponse
 }
 
 // enable content scripts for enabled servers

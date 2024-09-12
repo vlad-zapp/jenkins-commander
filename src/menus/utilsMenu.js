@@ -5,15 +5,40 @@ class UtilsMenu extends Menu {
         this.items = [
             new MenuItem('import-variables').setMenu(() => new ServersMenu('Select source server', s => new MenuItem(s.id).setMenu(() => importVariables(s.id)))),
             new MenuItem('import-credentials').setMenu(() => new ServersMenu('Select source server', s => new MenuItem(s.id).setMenu(() => importCredentials(s.id)))),
+            new MenuItem('import-signature-approvals').setMenu(() => new ServersMenu('Select source server', s => new MenuItem(s.id).setMenu(() => importSignatures(s.id)))),
+
             // new MenuItem('compare-jobs').setMenu(() => new ServersMenu('Select server 1',
             //     s1 => new MenuItem(s1.id).setMenu(() => new ServersMenu('Select server 2',
             //         s2 => new MenuItem(s2.id).setAction(async n => await this.compareJobs(s1, s2, n))))))
         ]
+
+        if(JobRunPage.Identify()) {
+            this.items.push(new MenuItem('analyze-logs').setAction(() => analyzeLog()))
+        }
     }
 }
 
 async function compareJobs(s1, s2, n) {
     
+}
+
+async function analyzeLog() {
+    nav.openLog()
+    nav.appendLog("Fetching logs")
+    const log = await (await fetch(appendUrl(JobRunPage.GetCurrentBuild(), 'consoleText'))).text()
+    nav.appendLog("Analyzing...")
+    const response = await queryLlm("analyze this jenkins log, list errors and failures that you find: " + log)
+    nav.appendText(response.response)
+}
+
+async function importSignatures(server) {
+    const menu = new SelectingMenu('Select signatures', [], createSignatures, async (i) => {
+        const response = await runRemoteGroovyScript(GroovyScripts.getSignatureApprovals, server)
+        i.items = getResult(response).map(e => new SelectableMenuItem(e, e))
+    })
+
+    await menu.init()
+    return menu;
 }
 
 async function importVariables(server) {
@@ -34,6 +59,18 @@ async function importCredentials(server) {
 
     await menu.init()
     return menu;
+}
+
+function createSignatures(selectedItems, nav) {
+    nav.openLog()
+    const response = runGroovyScript(GroovyScripts.setSignatureApprovals(selectedItems.map(x=>x.value)))
+    if (!response) {
+        nav.appendLog(`${selectedItems.length} signature approvals set`)
+    } else {
+        nav.appendLog(`got unexpected response when setting approvals: ${response}`)
+        nav.appendLog(`request data:`, selectedItems)
+    }
+    nav.appendLog('<hr>Done')
 }
 
 function createVariables(selectedItems, nav) {
