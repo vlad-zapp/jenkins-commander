@@ -63,15 +63,20 @@ class JobConfigurationPage {
 }
 
 class CredentialsDetailsPage {
+    static pathRx = '^(.*)/credentials/store/(system|folder)/domain/[^/]+/credential/([^/]+)/$'
+
     static Identify() {
-        return (location.pathname.match('/credentials/store/system/domain/[^/]+/credential/[^/]+/$')?.length > 0) ?? false;
+        return (location.pathname.match(this.pathRx)?.length > 0) ?? false;
     }
 
     static EnableReveal() {
         $(`<a href='#' id='reveal-cred')'>Reveal</a><br/><br/>`).insertAfter('div#main-panel h1')
         $('a#reveal-cred').on('click', ()=> {
-            const id = location.pathname.split('/').filter(x=>x)[6]
-            const reveal = runGroovyScript(GroovyScripts.revealCredentials(id))
+            const pathComponents = location.pathname.match(this.pathRx)
+            const folderPath = pathComponents[1].replaceAll('/job/','/').trim('/')
+            const id = pathComponents[3]
+
+            const reveal = runGroovyScript(GroovyScripts.revealCredentials(id, folderPath))
             $(`<div style='white-space: pre-line; border: 1px dashed black; padding: inherit;'>${reveal}</div><br/><br/>`).insertAfter('a#reveal-cred')
             $('a#reveal-cred').remove()
             return false;

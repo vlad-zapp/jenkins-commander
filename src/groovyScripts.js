@@ -30,7 +30,7 @@ class GroovyScripts {
         println JsonOutput.toJson( org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval.get().getApprovedSignatures() )
     `;
 
-    static setSignatureApprovals(signatures) { 
+    static setSignatureApprovals(signatures) {
         return `
             String[] data = [ ${signatures.map(quoted).join()} ]
             org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval.get().setApprovedSignatures(data)
@@ -52,9 +52,9 @@ class GroovyScripts {
             .collectEntries({a -> ["\${a.key}":a.value.toString()]}) %2B ['domain':d.name, 'store':"\${s.getClass().toString()}"]}}})
     `
 
-    static revealCredentials(id) {
+    static revealCredentials(id, path = null) {
         return `
-            def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials( com.cloudbees.plugins.credentials.Credentials.class, Jenkins.instance, null, null ).findAll {it.id=='${id}'}
+            def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials( com.cloudbees.plugins.credentials.Credentials.class, Jenkins.instance${path ? `.getItemByFullName(\"${path}\")` : ''}, null, null ).findAll {it.id=='${id}'}
             for (c in creds) {
                 println c.properties
                         .findAll { !(['descriptor', 'privateKey', 'class', 'scope', 'usernameSecret', 'privateKeySource', 'description', 'id'].contains(it.key)) }
